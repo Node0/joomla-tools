@@ -23,9 +23,14 @@ vendorName = "joomlaology"
 comAuthor = "Joe Hacobian"
 comAuthorUrl = "https://algorithme.us"
 comCopyRightHolder = "Joomlaology"
-comCreationMonthAndYear = "March 2022"
+comCreationMonth = "March"
+comCreationYear = "2022"
+comCreationMonthAndYear = f"{comCreationMonth} {comCreationYear}"
 comLicenseType = "GPL v2"
 comVersion = "0.0.1"
+
+# Initial language locale to setup
+langLocaleCode = "en-GB"
 
 # SQL Filenames
 sqlInstallFilename = f"install.mysql.utf8.sql"
@@ -139,10 +144,14 @@ componentManifestContents = f"""
     <namespace path="src">{vendorName}\Component\{comNameInNamespaces}</namespace>
 
     <files folder="site/">
+        <folder>language</folder>
         <folder>src</folder>
         <folder>tmpl</folder>
     </files>
 
+    <languages>
+        <language tag="{langLocaleCode}">site/language/{langLocaleCode}/{langLocaleCode}.{comFolderName}.ini</language>
+    </languages>
 
     <administration>
         <!-- The link that will appear in the Admin panel's "Components" menu -->
@@ -164,11 +173,17 @@ componentManifestContents = f"""
         </submenu>
         <!-- List of files and folders to copy. Note the 'folder' attribute. This is the name of the folder in your component package to copy FROM -->
         <files folder="admin">
+            <folder>language</folder>
             <folder>services</folder>
             <folder>src</folder>
             <folder>sql</folder>
             <folder>tmpl</folder>
         </files>
+
+        <languages>
+            <language tag="{langLocaleCode}">admin/language/{langLocaleCode}/{langLocaleCode}.{comFolderName}.ini</language>
+            <language tag="{langLocaleCode}">admin/language/{langLocaleCode}/{langLocaleCode}.{comFolderName}.sys.ini</language>
+        </languages>
     </administration>
 
     <install>
@@ -231,7 +246,52 @@ return new class implements ServiceProviderInterface {{
 """[1:]
 ##################################### END Admin services provider.php ####################################
 createFile(assetType = "f", targetPath = adminServicesProviderPhpFile, fileContents = adminServicesProviderPhpFileContents)
+
+
 ##########################################################################################################
+############################################ START i8n setup #############################################
+##########################################################################################################
+
+adminLanguageLangLocalCodeIniFile = f"{adminFolder}/language/{langLocaleCode}/{langLocaleCode}.{comFolderName}.ini"
+#################################### START Admin i8n language strings ###################################
+adminLanguageLangLocalCodeIniFileContents = f"""
+; {comName} Admin Strings
+; Copyright (C)  {comCreationYear} {comCopyRightHolder}. All Rights Reserved.
+
+COM_HELLOWORLD_MSG_HELLO_WORLD="Hello World (i8n translation string)!"
+"""[1:]
+##################################### END Admin i8n language strings ####################################
+createFile(assetType = "f", targetPath = adminLanguageLangLocalCodeIniFile, fileContents = adminLanguageLangLocalCodeIniFileContents)
+
+
+adminLanguageLangLocalCodeSysIniFile = f"{adminFolder}/language/{langLocaleCode}/{langLocaleCode}.{comFolderName}.sys.ini"
+#################################### START Admin i8n language strings ###################################
+adminLanguageLangLocalCodeSysIniFileContents = f"""
+; {comName} Sys.ini Strings
+; Copyright (C)  {comCreationYear} {comCopyRightHolder}. All Rights Reserved.
+
+COM_HELLOWORLD_MENU_HELLO_WORLD_TITLE="Hello World (i8n translation string)!"
+COM_HELLOWORLD_MENU_HELLO_WORLD_DESC="My first Joomla! page"
+"""[1:]
+##################################### END Admin i8n language strings ####################################
+createFile(assetType = "f", targetPath = adminLanguageLangLocalCodeSysIniFile, fileContents = adminLanguageLangLocalCodeSysIniFileContents)
+
+
+siteLanguageLangLocalCodeIniFile = f"{siteFolder}/language/{langLocaleCode}/{langLocaleCode}.{comFolderName}.ini"
+#################################### START site i8n language strings ###################################
+siteLanguageLangLocalCodeIniFileContents = f"""
+; {comName} site Strings
+; Copyright (C)  {comCreationYear} {comCopyRightHolder}. All Rights Reserved.
+
+COM_HELLOWORLD_MSG_HELLO_WORLD="Hello World (i8n translation string)!"
+"""[1:]
+##################################### END site i8n language strings ####################################
+createFile(assetType = "f", targetPath = siteLanguageLangLocalCodeIniFile, fileContents = siteLanguageLangLocalCodeIniFileContents)
+##########################################################################################################
+############################################# END i8n setup ##############################################
+##########################################################################################################
+
+
 
 
 ##########################################################################################################
@@ -254,7 +314,7 @@ use Joomla\CMS\MVC\Controller\BaseController;
  * @subpackage  {comFolderName}
  *
  * @copyright   {comCopyRightHolder}
- * @license     Copyright (C) {comLicenseType} All rights reserved.
+ * @license     Copyright (C)  {comCreationYear} {comLicenseType} All rights reserved.
  */
 
 /**
@@ -297,7 +357,7 @@ use Joomla\CMS\MVC\View\HtmlView as BaseHtmlView;
  * @subpackage  {comFolderName}
  *
  * @copyright   {comCopyRightHolder}
- * @license     Copyright (C) {comLicenseType} All rights reserved.
+ * @license     Copyright (C)  {comCreationYear} {comLicenseType} All rights reserved.
  */
 
 /**
@@ -327,17 +387,20 @@ adminTmplInitialViewTemplatePhpFile = f"{adminFolder}/tmpl/{initialViewNameLower
 adminTmplInitialViewTemplatePhpFileContents = f"""
 <?php
 
+use Joomla\CMS\Language\Text;
+
 /**
  * @package     Joomla.Administrator
  * @subpackage  {comFolderName}
  *
  * @copyright   {comCopyRightHolder}
- * @license     Copyright (C) {comLicenseType} All rights reserved.
+ * @license     Copyright (C)  {comCreationYear} {comLicenseType} All rights reserved.
  */
 
  // No direct access to this file
 defined('_JEXEC') or die('Restricted Access');
 ?>
+<!-- <h2><?= Text::_('COM_HELLOWORLD_MSG_HELLO_WORLD') ?></h2> -->
 <h2>Hello world!</h2>
 <h4>This is the initial admin view.</h4>
 """[1:]
@@ -371,7 +434,7 @@ use Joomla\CMS\Factory;
  * @subpackage  {comFolderName}
  *
  * @copyright   {comCopyRightHolder}
- * @license     Copyright (C) {comLicenseType} All rights reserved.
+ * @license     Copyright (C)  {comCreationYear} {comLicenseType} All rights reserved.
  */
 
 /**
@@ -412,7 +475,7 @@ use Joomla\CMS\MVC\View\HtmlView as BaseHtmlView;
  * @subpackage  {comFolderName}
  *
  * @copyright   {comCopyRightHolder}
- * @license     Copyright (C) {comLicenseType} All rights reserved.
+ * @license     Copyright (C)  {comCreationYear} {comLicenseType} All rights reserved.
  */
 
 /**
@@ -444,19 +507,22 @@ siteTmplInitialViewTemplatePhpFile = f"{siteFolder}/tmpl/{initialViewNameLower}/
 siteTmplInitialViewTemplatePhpFileContents = f"""
 <?php
 
+use Joomla\CMS\Language\Text;
+
 /**
  * @package     Joomla.Administrator
  * @subpackage  {comFolderName}
  *
  * @copyright   {comCopyRightHolder}
- * @license     Copyright (C) {comLicenseType} All rights reserved.
+ * @license     Copyright (C)  {comLicenseType} All rights reserved.
  */
 
  // No direct access to this file
 defined('_JEXEC') or die('Restricted Access');
 ?>
+<!-- <h2><?= Text::_('COM_HELLOWORLD_MSG_HELLO_WORLD') ?></h2> -->
 <h2>Hello world!</h2>
-<h4>This is the initial site view.</h4>
+<h4>This is the initial admin view.</h4>
 """[1:]
 ##################################### END Site tmpl/<initialViewNameLower>/default.php ####################################
 createFile(assetType = "f", targetPath = siteTmplInitialViewTemplatePhpFile, fileContents = siteTmplInitialViewTemplatePhpFileContents)
@@ -468,9 +534,13 @@ siteTmplInitialViewTemplateXmlFile = f"{siteFolder}/tmpl/{initialViewNameLower}/
 siteTmplInitialViewTemplateXmlFileContents = f"""
 <?xml version="1.0" encoding="utf-8"?>
 <metadata>
+    <!-- <layout title="COM_HELLOWORLD_MENU_HELLO_WORLD_TITLE">
+        <message><![CDATA[COM_HELLOWORLD_MENU_HELLO_WORLD_DESC]]></message>
+    </layout> -->
+
     <layout title="{initialViewMenuItemTitle}">
         <message><![CDATA[My first Joomla! page]]></message>
-    </layout>
+    </layout> 
 </metadata>
 """[1:]
 ##################################### END Site tmpl/<initialViewNameLower>/default.xml ####################################
