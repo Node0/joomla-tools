@@ -284,6 +284,7 @@ siteLanguageLangLocalCodeIniFileContents = f"""
 ; Copyright (C)  {comCreationYear} {comCopyRightHolder}. All Rights Reserved.
 
 COM_HELLOWORLD_MSG_HELLO_WORLD="Hello World (i8n translation string)!"
+COM_HELLOWORLD_MSG_GREETING="This message is coming from the item model!"
 """[1:]
 ##################################### END site i8n language strings ####################################
 createFile(assetType = "f", targetPath = siteLanguageLangLocalCodeIniFile, fileContents = siteLanguageLangLocalCodeIniFileContents)
@@ -333,6 +334,18 @@ class DisplayController extends BaseController {{
 
     public function display($cachable = false, $urlparams = array()) {{
         return parent::display($cachable, $urlparams);
+
+        /* TODO: Configure admin displaycontroller to use this message model.
+        $document = Factory::getDocument();
+        $viewName = $this->input->getCmd('view', 'login');
+        $viewFormat = $document->getType();
+
+        $view = $this->getView($viewName, $viewFormat);
+        $view->setModel($this->getModel('Message'), true);
+
+        $view->document = $document;
+        $view->display();
+        */
     }}
 
 }}
@@ -404,9 +417,61 @@ defined('_JEXEC') or die('Restricted Access');
 <h2>Hello world!</h2>
 <h4>This is the initial admin view.</h4>
 """[1:]
+# <p><?= $this->getModel()->getItem()->message; ?></p>
 ##################################### END Admin tmpl/<initialViewNameLower>/default.php ####################################
 createFile(assetType = "f", targetPath = adminTmplInitialViewTemplatePhpFile, fileContents = adminTmplInitialViewTemplatePhpFileContents)
-##########################################################################################################
+
+
+# Create the first admin model
+adminSrcModelMessageModelPhpFile = f"{adminFolder}/src/Model/MessageModel.php"
+#################################### START Admin src/Model/MessageModel.php ###################################
+adminSrcModelMessageModelPhpFileContents = f"""
+<?php
+namespace {vendorName}\Component\{comNameInNamespaces}\Administrator\Model;
+defined('_JEXEC') or die;
+
+/* List of availabel model classes
+use Joomla\CMS\MVC\Model\AdminModel
+use Joomla\CMS\MVC\Model\BaseModel
+use Joomla\CMS\MVC\Model\FormModel
+use Joomla\CMS\MVC\Model\ItemModel
+use Joomla\CMS\MVC\Model\ListModel
+*/
+
+use Joomla\CMS\MVC\Model\ItemModel;
+use Joomla\CMS\Language\Text;
+
+/**
+ * @package     Joomla.Administrator
+ * @subpackage  {comFolderName}
+ *
+ * @copyright   {comCopyRightHolder}
+ * @license     Copyright (C) {comLicenseType} All rights reserved.
+ */
+
+/**
+ * Hello World Message Model
+ * @since 0.0.1
+ */
+class MessageModel extends ItemModel {{
+
+    /**
+     * Returns a message for display
+     * @param integer $pk Primary key of the "message item", currently unused
+     * @return object Message object
+     */
+    public function getItem($pk= null): object {{
+        $item = new \stdClass();
+        $item->message = "A message from the admin message model";
+        /* $item->message = Text::_('COM_HELLOWORLD_MSG_GREETING'); */
+        return $item;
+    }}
+
+}}
+"""[1:]
+##################################### END Admin src/Controller/DisplayController.php ####################################
+createFile(assetType = "f", targetPath = adminSrcModelMessageModelPhpFile, fileContents = adminSrcModelMessageModelPhpFileContents)
+
 
 ##########################################################################################################
 ############################################# END ADMIN SIDE #############################################
@@ -449,6 +514,7 @@ class DisplayController extends BaseController {{
         $viewFormat = $document->getType();
 
         $view = $this->getView($viewName, $viewFormat);
+        $view->setModel($this->getModel('Message'), true);
 
         $view->document = $document;
         $view->display();
@@ -522,10 +588,62 @@ defined('_JEXEC') or die('Restricted Access');
 ?>
 <!-- <h2><?= Text::_('COM_HELLOWORLD_MSG_HELLO_WORLD') ?></h2> -->
 <h2>Hello world!</h2>
-<h4>This is the initial admin view.</h4>
+<h4>This is the initial site view.</h4>
+<p><?= $this->getModel()->getItem()->message; ?></p>
 """[1:]
 ##################################### END Site tmpl/<initialViewNameLower>/default.php ####################################
 createFile(assetType = "f", targetPath = siteTmplInitialViewTemplatePhpFile, fileContents = siteTmplInitialViewTemplatePhpFileContents)
+
+
+# Create the first site model
+siteSrcModelMessageModelPhpFile = f"{siteFolder}/src/Model/MessageModel.php"
+#################################### START Site src/Model/MessageModel.php ###################################
+siteSrcModelMessageModelPhpFileContents = f"""
+<?php
+namespace {vendorName}\Component\{comNameInNamespaces}\Site\Model;
+defined('_JEXEC') or die;
+
+/* List of availabel model classes
+use Joomla\CMS\MVC\Model\BaseModel
+use Joomla\CMS\MVC\Model\FormModel
+use Joomla\CMS\MVC\Model\ItemModel
+use Joomla\CMS\MVC\Model\ListModel
+*/
+
+
+use Joomla\CMS\MVC\Model\ItemModel;
+use Joomla\CMS\Language\Text;
+
+/**
+ * @package     Joomla.Administrator
+ * @subpackage  {comFolderName}
+ *
+ * @copyright   {comCopyRightHolder}
+ * @license     Copyright (C) {comLicenseType} All rights reserved.
+ */
+
+/**
+ * Hello World Message Model
+ * @since 0.0.1
+ */
+class MessageModel extends ItemModel {{
+
+    /**
+     * Returns a message for display
+     * @param integer $pk Primary key of the "message item", currently unused
+     * @return object Message object
+     */
+    public function getItem($pk= null): object {{
+        $item = new \stdClass();
+        $item->message = "A message from the site message model";
+        /* $item->message = Text::_('COM_HELLOWORLD_MSG_GREETING'); */
+        return $item;
+    }}
+
+}}
+"""[1:]
+##################################### END Site src/Controller/DisplayController.php ####################################
+createFile(assetType = "f", targetPath = siteSrcModelMessageModelPhpFile, fileContents = siteSrcModelMessageModelPhpFileContents)
 
 
 # Create the initial site view's menu item xml file
