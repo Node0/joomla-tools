@@ -2,32 +2,75 @@
 
 # You'll need the sh library for this script to function properly.
 # pip3 install sh
-import os, sh
+import os, sh, argparse
 
 class ComponentMaker:
   def __init__(self):
+    parser = argparse.ArgumentParser(
+    description='Customize your J! 4 Component scaffold.',
+    formatter_class=argparse.RawDescriptionHelpFormatter,
+    allow_abbrev=False,
+    epilog="""Please Note:
+This script requires python3.6 or later and also requires the sh library.
+You may install the sh library via: pip3 install sh
+
+Usage Example in Bash/sh/zsh:
+./componentMaker.py \\
+  --component-name="Generic Hello World" \\
+  --component-desc="A generic hello world component for J! 4" \\
+  --vendor-name="joomlaology" \\
+  --author-name="Joe Hacobian" \\
+  --author-url="https://algorithme.us" \\
+  --copyright-holder="Joe Hacobian" \\
+  --creation-month="April" \\
+  --creation-year="2022" \\
+  --component-version="0.0.1"
+
+  From there, test your component scaffold by installing the zip file into Joomla.
+  You may then copy the generated folder into your git repo and begin development.""")
+
+    parser.add_argument('--component-name', required=True, help="""The Component's name""")
+    parser.add_argument('--component-desc', required=True, help="""The Component's description""")
+    parser.add_argument('--vendor-name',    required=True, help="""The vendor name used in configuring namespaces, typically your org or author's name""")
+    parser.add_argument('--author-name',      required=True, help="""The code author's name""")
+    parser.add_argument('--author-url',       required=True, help="""The code author's website URL""")
+    parser.add_argument('--copyright-holder', required=True, help="""The copyright holder's name""")
+    parser.add_argument('--creation-month',   required=True, help="""Month of this component's creation""")
+    parser.add_argument('--creation-year',    required=True, help="""Year of this component's creation""")
+    parser.add_argument('--license-type',     required=False, help="""OPTIONAL: Your license type, defaults to GPL v2""")
+    parser.add_argument('--component-version',required=True, help="""The component's version string""")
+    parser.add_argument('--initial-view-name',required=False, help="""OPTIONAL: Set the name of the initial view. Defaults to Main""")
+    # The following commented out declarations are for illustration purposes.
+    # parser.add_argument('-a', '--author-name',      required=True, help="""The code author's name""")
+    # positional arg declaration parser.add_argument('foo', metavar='N', type=int, nargs='+', help='an integer for the accumulator')
+    self.args = parser.parse_args()
+
     # Basic component creation directory location and permissions
     self.currDir = sh.pwd().strip()
     self.folderPermissions = "0755"
     self.filePermissions = "0644"
 
     # Component specific global details
-    self.comName = "Generic Hello World"
-    self.comDesc = """A Hello World description!"""
+    self.comName = self.args.component_name
+    self.comDesc = self.args.component_desc
     self.comNameJoomla = self.comName.lower().replace(" ","")
     self.comNameInNamespaces = self.comName.replace(" ","")
 
     # This pertains to the php namespace configuration
-    self.vendorName = "joomlaology"
+    self.vendorName = self.args.vendor_name
 
-    self.comAuthor = "Joe Hacobian"
-    self.comAuthorUrl = "https://algorithme.us"
-    self.comCopyRightHolder = "Joomlaology"
-    self.comCreationMonth = "March"
-    self.comCreationYear = "2022"
+    self.comAuthor = self.args.author_name
+    self.comAuthorUrl = self.args.author_url
+    self.comCopyRightHolder = self.args.copyright_holder
+    self.comCreationMonth = self.args.creation_month
+    self.comCreationYear = self.args.creation_year
     self.comCreationMonthAndYear = f"{self.comCreationMonth} {self.comCreationYear}"
-    self.comLicenseType = "GPL v2"
-    self.comVersion = "0.0.1"
+
+    # If a custom license type is specified, use it, else GPL v2
+    self.comLicenseType = self.args.license_type if self.args.license_type != None else "GPL v2"
+
+
+    self.comVersion = self.args.component_version
 
     # Initial language locale to setup
     self.langLocaleCode = "en-GB"
@@ -39,7 +82,9 @@ class ComponentMaker:
     # This is simply the first table's name for illustrative purposes
     self.initialTableName = f"storage_table_1"
 
-    self.initialViewName = "Main"
+    # If a custom initial view name is specified, use it, else use "Main"
+    self.initialViewName = self.args.initial_view_name if self.args.initial_view_name != None else "Main"
+
     self.initialViewNameLower = f"{self.initialViewName.lower()}"
     self.initialViewMenuItemTitle = f"Menu Item for {self.initialViewName} view"
 
