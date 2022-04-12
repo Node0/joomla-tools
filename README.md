@@ -16,7 +16,8 @@ PLEASE NOTE: You will need Python 3.6 or later and the `os`, `sh`, and `argparse
 ## How to use:
   
 ### Component maker usage:  
-```./componentMaker.py \
+```
+./componentMaker.py \
   --component-name="Generic Hello World" \
   --component-desc="A generic hello world component for J! 4" \
   --vendor-name="joomlaology" \
@@ -25,4 +26,5 @@ PLEASE NOTE: You will need Python 3.6 or later and the `os`, `sh`, and `argparse
   --copyright-holder="Joe Hacobian" \
   --creation-month="April" \
   --creation-year="2022" \
-  --component-version="0.0.1"```
+  --component-version="0.0.1"
+  ```
