@@ -26,4 +26,5 @@ PLEASE NOTE: You will need Python 3.6 or later and the `os`, `sh`, and `argparse
   --copyright-holder="Joe Hacobian" \
   --creation-month="April" \
   --creation-year="2022" \
-  --component-version="0.0.1"```
+  --component-version="0.0.1"
+  ```
