@@ -29,16 +29,16 @@ Usage Example in Bash/sh/zsh:
   From there, test your plugin scaffold by installing the zip file into Joomla.
   You may then copy the generated folder into your git repo and begin development.""")
 
-    parser.add_argument('--plugin-name', required=True, help="""The plugin's name""")
-    parser.add_argument('--plugin-desc', required=True, help="""The plugin's description""")
-    parser.add_argument('--vendor-name',    required=True, help="""The vendor name used in configuring namespaces, typically your org or author's name""")
-    parser.add_argument('--author-name',      required=True, help="""The code author's name""")
-    parser.add_argument('--author-url',       required=True, help="""The code author's website URL""")
-    parser.add_argument('--copyright-holder', required=True, help="""The copyright holder's name""")
-    parser.add_argument('--creation-month',   required=True, help="""Month of this plugin's creation""")
-    parser.add_argument('--creation-year',    required=True, help="""Year of this plugin's creation""")
+    parser.add_argument('--plugin-name',      required=True,  help="""The plugin's name""")
+    parser.add_argument('--plugin-desc',      required=True,  help="""The plugin's description""")
+    parser.add_argument('--vendor-name',      required=True,  help="""The vendor name used in configuring namespaces, typically your org or author's name""")
+    parser.add_argument('--author-name',      required=True,  help="""The code author's name""")
+    parser.add_argument('--author-url',       required=True,  help="""The code author's website URL""")
+    parser.add_argument('--copyright-holder', required=True,  help="""The copyright holder's name""")
+    parser.add_argument('--creation-month',   required=True,  help="""Month of this plugin's creation""")
+    parser.add_argument('--creation-year',    required=True,  help="""Year of this plugin's creation""")
     parser.add_argument('--license-type',     required=False, help="""OPTIONAL: Your license type, defaults to GPL v2""")
-    parser.add_argument('--plugin-version',required=True, help="""The plugin's version string""")
+    parser.add_argument('--plugin-version',   required=True,  help="""The plugin's version string""")
     parser.add_argument('--initial-view-name',required=False, help="""OPTIONAL: Set the name of the initial view. Defaults to Main""")
     # The following commented out declarations are for illustration purposes.
     # parser.add_argument('-a', '--author-name',      required=True, help="""The code author's name""")
@@ -162,18 +162,18 @@ Usage Example in Bash/sh/zsh:
     self.createFile(assetType = "d", targetPath = self.siteFolder)
     self.createFile(assetType = "d", targetPath = self.adminFolder)
 
-  def setupComponentManifestFile(self):
-    # Create the component manifest xml file container
-    componentManifestFile = f"{self.plgPackageBaseFolder}/{self.plgNameJoomla}.xml"
-    #componentManifestFile = f"{self.plgPackageBaseFolder}/manifest.xml"
+  def setupPluginManifestFile(self):
+    # Create the plugin manifest xml file container
+    pluginManifestFile = f"{self.plgPackageBaseFolder}/{self.plgNameJoomla}.xml"
+    #pluginManifestFile = f"{self.plgPackageBaseFolder}/manifest.xml"
     ##########################################################################################################
     ##########################################################################################################
-    ###################################### START Component Manifest XML ######################################
+    ###################################### START Plugin Manifest XML ######################################
     ##########################################################################################################
     ##########################################################################################################
-    componentManifestContents = f"""
+    pluginManifestContents = f"""
     <?xml version="1.0" encoding="utf-8"?>
-    <extension type="component" method="upgrade">
+    <extension type="plugin" method="upgrade">
     <!-- 'version' attribute for extension tag is no longer used -->
 
         <name>{self.plgName}</name>
@@ -187,126 +187,18 @@ Usage Example in Bash/sh/zsh:
             {self.plgDesc}
         </description>
 
-        <!-- This is the PHP namespace under which the extension's
-        code is organised. It should follow this format:
-
-        {self.vendorName}\Component\{self.plgNameJoomla}
-
-        "Vendor" can be your company or your own name
-
-        The "ComponentName" section MUST match the name used
-        everywhere else for your component. Whatever the name of
-        this XML file is, the namespace must match (ignoring CamelCase).
-        -->
-        <namespace path="src">{self.vendorName}\Component\{self.plgNameInNamespaces}</namespace>
-
-        <files folder="site/">
-            <folder>language</folder>
-            <folder>src</folder>
-            <folder>tmpl</folder>
-        </files>
-
-        <languages>
-            <language tag="{self.langLocaleCode}">site/language/{self.langLocaleCode}/{self.langLocaleCode}.{self.plgFolderName}.ini</language>
-        </languages>
-
-        <administration>
-            <!-- The link that will appear in the Admin panel's "Components" menu -->
-            <!-- NOTE: If we are only going to have a single menu item (under the components menu) appear
-                      then the following element is sufficient:
-                      <menu link="index.php?option={self.plgFolderName}">{self.plgName}</menu>
-                      pay attention to the link url i.e. index.php?option={self.plgFolderName} etc...
-                      this structure is changed if we wish to show an expanded submenu underneath the
-                      app's menu item (the app here being the component we're developing) then we'll need to
-                      use a slightly different menu and submenu element structure as well as removing the index.php?
-                      from the link attribute.
-                      In all cases any use of query string parameters in the route requires ampersands to be specified as follows:
-                      <menu link="option={self.plgFolderName}&amp;view=<name_of_view>">Menu Item Title</menu>
-                      See below for the actively used submenu implementation example.
-                      -->
-            <menu>{self.plgName}</menu>
-            <submenu>
-              <menu link="option={self.plgFolderName}">Dashboard</menu>
-            </submenu>
-            <!-- List of files and folders to copy. Note the 'folder' attribute. This is the name of the folder in your component package to copy FROM -->
-            <files folder="admin">
-                <folder>language</folder>
-                <folder>services</folder>
-                <folder>src</folder>
-                <folder>sql</folder>
-                <folder>tmpl</folder>
-            </files>
-
-            <languages>
-                <language tag="{self.langLocaleCode}">admin/language/{self.langLocaleCode}/{self.langLocaleCode}.{self.plgFolderName}.ini</language>
-                <language tag="{self.langLocaleCode}">admin/language/{self.langLocaleCode}/{self.langLocaleCode}.{self.plgFolderName}.sys.ini</language>
-            </languages>
-        </administration>
-
-        <install>
-            <sql>
-                <file driver="mysql" charset="utf8">sql/{self.sqlInstallFilename}</file>
-            </sql>
-        </install>
-        <uninstall>
-            <sql>
-                <file driver="mysql" charset="utf8">sql/{self.sqlUninstallFilename}</file>
-            </sql>
-        </uninstall>
-        <update>
-            <schemas>
-                <schemapath type="mysql">sql/updates/mysql</schemapath>
-            </schemas>
-        </update>
-
     </extension>
     """[5:]
     ##########################################################################################################
     ##########################################################################################################
-    ####################################### END Component Manifest XML #######################################
+    ####################################### END Plugin Manifest XML #######################################
     ##########################################################################################################
     ##########################################################################################################
-    self.createFile(assetType = "f", targetPath = componentManifestFile, fileContents = componentManifestContents)
+    self.createFile(assetType = "f", targetPath = pluginManifestFile, fileContents = pluginManifestContents)
 
-  def setupAdminServicesProviderPhpFile(self):
-    ################################### Create admin services provider.php ###################################
-    adminServicesProviderPhpFile = f"{self.adminFolder}/services/provider.php"
-    #################################### START Admin services provider.php ###################################
-    adminServicesProviderPhpFileContents = f"""
-    <?php
-    defined('_JEXEC') or die;
-
-    use Joomla\CMS\Dispatcher\ComponentDispatcherFactoryInterface;
-    use Joomla\CMS\Extension\ComponentInterface;
-    use Joomla\CMS\Extension\MVCComponent;
-    use Joomla\CMS\Extension\Service\Provider\ComponentDispatcherFactory;
-    use Joomla\CMS\Extension\Service\Provider\MVCFactory;
-    use Joomla\CMS\MVC\Factory\MVCFactoryInterface;
-    use Joomla\DI\Container;
-    use Joomla\DI\ServiceProviderInterface;
-
-    return new class implements ServiceProviderInterface {{
-        public function register(Container $container): void {{
-            $container->registerServiceProvider(new MVCFactory('\\\{self.vendorName}\\\Component\\\{self.plgNameInNamespaces}'));
-            $container->registerServiceProvider(new ComponentDispatcherFactory('\\\{self.vendorName}\\\Component\\\{self.plgNameInNamespaces}'));
-            $container->set(
-                ComponentInterface::class,
-                function (Container $container) {{
-                    $component = new MVCComponent($container->get(ComponentDispatcherFactoryInterface::class));
-                    $component->setMVCFactory($container->get(MVCFactoryInterface::class));
-
-                    return $component;
-                }}
-            );
-        }}
-    }};
-    """[5:]
-    ##################################### END Admin services provider.php ####################################
-    self.createFile(assetType = "f", targetPath = adminServicesProviderPhpFile, fileContents = adminServicesProviderPhpFileContents)
-
-  ##########################################################################################################
-  ############################################ START i8n setup #############################################
-  ##########################################################################################################
+    ##########################################################################################################
+    ############################################ START i8n setup #############################################
+    ##########################################################################################################
 
   def setupAdminLanguageLangLocalCodeIniFile(self):
     adminLanguageLangLocalCodeIniFile = f"{self.adminFolder}/language/{self.langLocaleCode}/{self.langLocaleCode}.{self.plgFolderName}.ini"
@@ -350,380 +242,6 @@ Usage Example in Bash/sh/zsh:
   ############################################# END i8n setup ##############################################
   ##########################################################################################################
 
-
-
-
-  ##########################################################################################################
-  ############################################ START ADMIN SIDE ############################################
-  ##########################################################################################################
-
-  def setupAdminSrcControllerDisplayControllerPhpFile(self):
-    # Create the first admin display controller
-    adminSrcControllerDisplayControllerPhpFile = f"{self.adminFolder}/src/Controller/DisplayController.php"
-    #################################### START Admin src/Controller/DisplayController.php ###################################
-    adminSrcControllerDisplayControllerPhpFileContents = f"""
-    <?php
-    namespace {self.vendorName}\Component\{self.plgNameInNamespaces}\Administrator\Controller;
-    defined('_JEXEC') or die;
-
-    use Joomla\CMS\MVC\Controller\BaseController;
-
-    /**
-    * @package     Joomla.Administrator
-    * @subpackage  {self.plgFolderName}
-    *
-    * @copyright   {self.plgCopyRightHolder}
-    * @license     Copyright (C)  {self.plgCreationYear} {self.plgLicenseType} All rights reserved.
-    */
-
-    /**
-    * Default Controller of {self.plgNameInNamespaces} component
-    *
-    * @package     Joomla.Administrator
-    * @subpackage  {self.plgFolderName}
-    */
-    class DisplayController extends BaseController {{
-        /**
-        * The default view for the display method.
-        *
-        * @var string
-        */
-        protected $default_view = '{self.initialViewNameLower}';
-
-        public function display($cachable = false, $urlparams = array()) {{
-            return parent::display($cachable, $urlparams);
-
-            /* TODO: Configure admin displaycontroller to use this message model.
-            $document = Factory::getDocument();
-            $viewName = $this->input->getCmd('view', 'login');
-            $viewFormat = $document->getType();
-
-            $view = $this->getView($viewName, $viewFormat);
-            $view->setModel($this->getModel('Message'), true);
-
-            $view->document = $document;
-            $view->display();
-            */
-        }}
-
-    }}
-    """[5:]
-    ##################################### END Admin src/Controller/DisplayController.php ####################################
-    self.createFile(assetType = "f", targetPath = adminSrcControllerDisplayControllerPhpFile, fileContents = adminSrcControllerDisplayControllerPhpFileContents)
-
-  def setupAdminSrcViewInitialHtmlViewPhpFile(self):
-    # Create the intial admin view (the name is set at beginning of file in global variables)
-    adminSrcViewInitialHtmlViewPhpFile = f"{self.adminFolder}/src/View/{self.initialViewName}/HtmlView.php"
-    #################################### START Admin src/View/<self.initialViewName>/HtmlView.php ###################################
-    adminSrcViewInitialHtmlViewPhpFileContents = f"""
-    <?php
-    namespace {self.vendorName}\Component\{self.plgNameInNamespaces}\Administrator\View\{self.initialViewName};
-
-    defined('_JEXEC') or die;
-
-    use Joomla\CMS\MVC\View\HtmlView as BaseHtmlView;
-
-    /**
-    * @package     Joomla.Administrator
-    * @subpackage  {self.plgFolderName}
-    *
-    * @copyright   {self.plgCopyRightHolder}
-    * @license     Copyright (C)  {self.plgCreationYear} {self.plgLicenseType} All rights reserved.
-    */
-
-    /**
-    * Main "{self.plgName}" Admin View
-    */
-    class HtmlView extends BaseHtmlView {{
-
-        /**
-        * Display the main "{self.plgName}" view, here called {self.initialViewName}
-        *
-        * @param   string  $tpl  The name of the template file to parse; automatically searches through the template paths.
-        * @return  void
-        */
-        function display($tpl = null) {{
-            parent::display($tpl);
-        }}
-
-    }}
-    """[5:]
-    ##################################### END Admin src/View/<self.initialViewName>/HtmlView.php ####################################
-    self.createFile(assetType = "f", targetPath = adminSrcViewInitialHtmlViewPhpFile, fileContents = adminSrcViewInitialHtmlViewPhpFileContents)
-
-  def setupAdminTmplInitialViewTemplatePhpFile(self):
-    # Create the initial admin view's template
-    adminTmplInitialViewTemplatePhpFile = f"{self.adminFolder}/tmpl/{self.initialViewNameLower}/default.php"
-    #################################### START Admin tmpl/<self.initialViewNameLower>/default.php ###################################
-    adminTmplInitialViewTemplatePhpFileContents = f"""
-    <?php
-
-    use Joomla\CMS\Language\Text;
-
-    /**
-    * @package     Joomla.Administrator
-    * @subpackage  {self.plgFolderName}
-    *
-    * @copyright   {self.plgCopyRightHolder}
-    * @license     Copyright (C)  {self.plgCreationYear} {self.plgLicenseType} All rights reserved.
-    */
-
-    // No direct access to this file
-    defined('_JEXEC') or die('Restricted Access');
-    ?>
-    <!-- <h2><?= Text::_('COM_HELLOWORLD_MSG_HELLO_WORLD') ?></h2> -->
-    <h2>Hello world!</h2>
-    <h4>This is the initial admin view.</h4>
-    """[5:]
-    # <p><?= $this->getModel()->getItem()->message; ?></p>
-    ##################################### END Admin tmpl/<self.initialViewNameLower>/default.php ####################################
-    self.createFile(assetType = "f", targetPath = adminTmplInitialViewTemplatePhpFile, fileContents = adminTmplInitialViewTemplatePhpFileContents)
-
-  def setupAdminSrcModelMessageModelPhpFile(self):
-    # Create the first admin model
-    adminSrcModelMessageModelPhpFile = f"{self.adminFolder}/src/Model/MessageModel.php"
-    #################################### START Admin src/Model/MessageModel.php ###################################
-    adminSrcModelMessageModelPhpFileContents = f"""
-    <?php
-    namespace {self.vendorName}\Component\{self.plgNameInNamespaces}\Administrator\Model;
-    defined('_JEXEC') or die;
-
-    /* List of availabel model classes
-    use Joomla\CMS\MVC\Model\AdminModel
-    use Joomla\CMS\MVC\Model\BaseModel
-    use Joomla\CMS\MVC\Model\FormModel
-    use Joomla\CMS\MVC\Model\ItemModel
-    use Joomla\CMS\MVC\Model\ListModel
-    */
-
-    use Joomla\CMS\MVC\Model\ItemModel;
-    use Joomla\CMS\Language\Text;
-
-    /**
-    * @package     Joomla.Administrator
-    * @subpackage  {self.plgFolderName}
-    *
-    * @copyright   {self.plgCopyRightHolder}
-    * @license     Copyright (C) {self.plgLicenseType} All rights reserved.
-    */
-
-    /**
-    * Hello World Message Model
-    * @since 0.0.1
-    */
-    class MessageModel extends ItemModel {{
-
-        /**
-        * Returns a message for display
-        * @param integer $pk Primary key of the "message item", currently unused
-        * @return object Message object
-        */
-        public function getItem($pk= null): object {{
-            $item = new \stdClass();
-            $item->message = "A message from the admin message model";
-            /* $item->message = Text::_('COM_HELLOWORLD_MSG_GREETING'); */
-            return $item;
-        }}
-
-    }}
-    """[5:]
-    ##################################### END Admin src/Controller/DisplayController.php ####################################
-    self.createFile(assetType = "f", targetPath = adminSrcModelMessageModelPhpFile, fileContents = adminSrcModelMessageModelPhpFileContents)
-
-  ##########################################################################################################
-  ############################################# END ADMIN SIDE #############################################
-  ##########################################################################################################
-
-
-  ##########################################################################################################
-  ############################################ START SITE SIDE #############################################
-  ##########################################################################################################
-
-  def setupSiteSrcControllerDisplayControllerPhpFile(self):
-    # Create the Initial site display controller
-    siteSrcControllerDisplayControllerPhpFile = f"{self.siteFolder}/src/Controller/DisplayController.php"
-    #################################### START Site src/Controller/DisplayController.php ###################################
-    siteSrcControllerDisplayControllerPhpFileContents = f"""
-    <?php
-    namespace {self.vendorName}\Component\{self.plgNameInNamespaces}\Site\Controller;
-    defined('_JEXEC') or die;
-
-    use Joomla\CMS\MVC\Controller\BaseController;
-    use Joomla\CMS\Factory;
-
-    /**
-    * @package     Joomla.Site
-    * @subpackage  {self.plgFolderName}
-    *
-    * @copyright   {self.plgCopyRightHolder}
-    * @license     Copyright (C)  {self.plgCreationYear} {self.plgLicenseType} All rights reserved.
-    */
-
-    /**
-    * {self.plgNameInNamespaces} Component Controller
-    * @since  {self.plgVersion}
-    */
-    class DisplayController extends BaseController {{
-
-        public function display($cachable = false, $urlparams = array()) {{
-            $document = Factory::getDocument();
-            $viewName = $this->input->getCmd('view', 'login');
-            $viewFormat = $document->getType();
-
-            $view = $this->getView($viewName, $viewFormat);
-            $view->setModel($this->getModel('Message'), true);
-
-            $view->document = $document;
-            $view->display();
-        }}
-
-    }}
-    """[5:]
-    ##################################### END Site src/Controller/DisplayController.php ####################################
-    self.createFile(assetType = "f", targetPath = siteSrcControllerDisplayControllerPhpFile, fileContents = siteSrcControllerDisplayControllerPhpFileContents)
-
-  def setupSiteSrcViewInitialHtmlViewPhpFile(self):
-    # Create the Initial site view
-    siteSrcViewInitialHtmlViewPhpFile = f"{self.siteFolder}/src/View/{self.initialViewName}/HtmlView.php"
-    #################################### START Site src/Controller/DisplayController.php ###################################
-    siteSrcViewInitialHtmlViewPhpFileContents = f"""
-    <?php
-    namespace {self.vendorName}\Component\{self.plgNameInNamespaces}\Site\View\{self.initialViewName};
-    defined('_JEXEC') or die;
-
-    use Joomla\CMS\MVC\View\HtmlView as BaseHtmlView;
-
-    /**
-    * @package     Joomla.Site
-    * @subpackage  {self.plgFolderName}
-    *
-    * @copyright   {self.plgCopyRightHolder}
-    * @license     Copyright (C)  {self.plgCreationYear} {self.plgLicenseType} All rights reserved.
-    */
-
-    /**
-    * View for the user identity validation form
-    */
-    class HtmlView extends BaseHtmlView {{
-
-
-        /**
-        * Display the view
-        *
-        * @param   string  $template  The name of the layout file to parse.
-        * @return  void
-        */
-        public function display($template = null) {{
-            // Call the parent display to display the layout file
-            parent::display($template);
-        }}
-
-    }}
-    """[5:]
-    ##################################### END Site src/Controller/DisplayController.php ####################################
-    self.createFile(assetType = "f", targetPath = siteSrcViewInitialHtmlViewPhpFile, fileContents = siteSrcViewInitialHtmlViewPhpFileContents)
-
-  def setupSiteTmplInitialViewTemplatePhpFile(self):
-    # Create the initial site view's template
-    siteTmplInitialViewTemplatePhpFile = f"{self.siteFolder}/tmpl/{self.initialViewNameLower}/default.php"
-    #################################### START Site tmpl/<self.initialViewNameLower>/default.php ###################################
-    siteTmplInitialViewTemplatePhpFileContents = f"""
-    <?php
-
-    use Joomla\CMS\Language\Text;
-
-    /**
-    * @package     Joomla.Administrator
-    * @subpackage  {self.plgFolderName}
-    *
-    * @copyright   {self.plgCopyRightHolder}
-    * @license     Copyright (C)  {self.plgLicenseType} All rights reserved.
-    */
-
-    // No direct access to this file
-    defined('_JEXEC') or die('Restricted Access');
-    ?>
-    <!-- <h2><?= Text::_('COM_HELLOWORLD_MSG_HELLO_WORLD') ?></h2> -->
-    <h2>Hello world!</h2>
-    <h4>This is the initial site view.</h4>
-    <p><?= $this->getModel()->getItem()->message; ?></p>
-    """[5:]
-    ##################################### END Site tmpl/<self.initialViewNameLower>/default.php ####################################
-    self.createFile(assetType = "f", targetPath = siteTmplInitialViewTemplatePhpFile, fileContents = siteTmplInitialViewTemplatePhpFileContents)
-
-  def setupSiteSrcModelMessageModelPhpFile(self):
-    # Create the first site model
-    siteSrcModelMessageModelPhpFile = f"{self.siteFolder}/src/Model/MessageModel.php"
-    #################################### START Site src/Model/MessageModel.php ###################################
-    siteSrcModelMessageModelPhpFileContents = f"""
-    <?php
-    namespace {self.vendorName}\Component\{self.plgNameInNamespaces}\Site\Model;
-    defined('_JEXEC') or die;
-
-    /* List of availabel model classes
-    use Joomla\CMS\MVC\Model\BaseModel
-    use Joomla\CMS\MVC\Model\FormModel
-    use Joomla\CMS\MVC\Model\ItemModel
-    use Joomla\CMS\MVC\Model\ListModel
-    */
-
-
-    use Joomla\CMS\MVC\Model\ItemModel;
-    use Joomla\CMS\Language\Text;
-
-    /**
-    * @package     Joomla.Administrator
-    * @subpackage  {self.plgFolderName}
-    *
-    * @copyright   {self.plgCopyRightHolder}
-    * @license     Copyright (C) {self.plgLicenseType} All rights reserved.
-    */
-
-    /**
-    * Hello World Message Model
-    * @since 0.0.1
-    */
-    class MessageModel extends ItemModel {{
-
-        /**
-        * Returns a message for display
-        * @param integer $pk Primary key of the "message item", currently unused
-        * @return object Message object
-        */
-        public function getItem($pk= null): object {{
-            $item = new \stdClass();
-            $item->message = "A message from the site message model";
-            /* $item->message = Text::_('COM_HELLOWORLD_MSG_GREETING'); */
-            return $item;
-        }}
-
-    }}
-    """[5:]
-    ##################################### END Site src/Controller/DisplayController.php ####################################
-    self.createFile(assetType = "f", targetPath = siteSrcModelMessageModelPhpFile, fileContents = siteSrcModelMessageModelPhpFileContents)
-
-  def setupSiteTmplInitialViewTemplateXmlFile(self):
-    # Create the initial site view's menu item xml file
-    siteTmplInitialViewTemplateXmlFile = f"{self.siteFolder}/tmpl/{self.initialViewNameLower}/default.xml"
-    #################################### START Site tmpl/<self.initialViewNameLower>/default.xml ###################################
-    siteTmplInitialViewTemplateXmlFileContents = f"""
-    <?xml version="1.0" encoding="utf-8"?>
-    <metadata>
-        <!-- <layout title="COM_HELLOWORLD_MENU_HELLO_WORLD_TITLE">
-            <message><![CDATA[COM_HELLOWORLD_MENU_HELLO_WORLD_DESC]]></message>
-        </layout> -->
-
-        <layout title="{self.initialViewMenuItemTitle}">
-            <message><![CDATA[My first Joomla! page]]></message>
-        </layout> 
-    </metadata>
-    """[5:]
-    ##################################### END Site tmpl/<self.initialViewNameLower>/default.xml ####################################
-    self.createFile(assetType = "f", targetPath = siteTmplInitialViewTemplateXmlFile, fileContents = siteTmplInitialViewTemplateXmlFileContents)
-
-  ##########################################################################################################
-  ############################################# END SITE SIDE ##############################################
-  ##########################################################################################################
 
 
   ############################################################################################################################
@@ -817,20 +335,10 @@ Usage Example in Bash/sh/zsh:
 
   def execute(self):
     self.setupSiteAndAdminFolders()
-    self.setupComponentManifestFile()
-    self.setupAdminServicesProviderPhpFile()
+    self.setupPluginManifestFile()
     self.setupAdminLanguageLangLocalCodeIniFile()
     self.setupAdminLanguageLangLocalCodeSysIniFile()
     self.setupSiteLanguageLangLocalCodeIniFile()
-    self.setupAdminSrcControllerDisplayControllerPhpFile()
-    self.setupAdminSrcViewInitialHtmlViewPhpFile()
-    self.setupAdminTmplInitialViewTemplatePhpFile()
-    self.setupAdminSrcModelMessageModelPhpFile()
-    self.setupSiteSrcControllerDisplayControllerPhpFile()
-    self.setupSiteSrcViewInitialHtmlViewPhpFile()
-    self.setupSiteTmplInitialViewTemplatePhpFile()
-    self.setupSiteSrcModelMessageModelPhpFile()
-    self.setupSiteTmplInitialViewTemplateXmlFile()
     self.setupSqlAssetFolder()
     self.setupAdminSqlInstallFile()
     self.setupAdminSqlUninstallFile()
