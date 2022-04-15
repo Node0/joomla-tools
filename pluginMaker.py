@@ -2,7 +2,7 @@
 
 # You'll need the sh library for this script to function properly.
 # pip3 install sh
-import os, sh, argparse
+import os, sh, sys, argparse
 
 class PluginMaker:
   def __init__(self):
@@ -29,30 +29,48 @@ Usage Example in Bash/sh/zsh:
   From there, test your plugin scaffold by installing the zip file into Joomla.
   You may then copy the generated folder into your git repo and begin development.""")
 
-    parser.add_argument('--plugin-name',      required=True,  help="""The plugin's name""")
-    parser.add_argument('--plugin-desc',      required=True,  help="""The plugin's description""")
-    parser.add_argument('--vendor-name',      required=True,  help="""The vendor name used in configuring namespaces, typically your org or author's name""")
-    parser.add_argument('--author-name',      required=True,  help="""The code author's name""")
-    parser.add_argument('--author-url',       required=True,  help="""The code author's website URL""")
-    parser.add_argument('--copyright-holder', required=True,  help="""The copyright holder's name""")
-    parser.add_argument('--creation-month',   required=True,  help="""Month of this plugin's creation""")
-    parser.add_argument('--creation-year',    required=True,  help="""Year of this plugin's creation""")
-    parser.add_argument('--license-type',     required=False, help="""OPTIONAL: Your license type, defaults to GPL v2""")
-    parser.add_argument('--plugin-version',   required=True,  help="""The plugin's version string""")
-    parser.add_argument('--initial-view-name',required=False, help="""OPTIONAL: Set the name of the initial view. Defaults to Main""")
+    parser.add_argument('--plugin-name',       required=True,   help="""The plugin's name""")
+    parser.add_argument('--plugin-desc',       required=True,   help="""The plugin's description""")
+    parser.add_argument('--plugin-type',       required=False,  help="""The plugin type, must be one of the following: "actionlog", "authentication", "captcha", "editors", "extension", "filesystem", "media-action", "quickicon", "system", "twofactorauth", "webservices", "api-authentication", "behaviour", "content", "editors-xtd", "fields", "finder", "installer", "privacy", "sampledata", "task", "user", "workflow" This value is overriden if --plugin-type-custom is passed alone or in tandem.""")
+    parser.add_argument('--plugin-type-custom',required=False,  help="""The name of your custom plugin type, this overrides --plugin-type if supplied, and is used if passed alone.""")
+    parser.add_argument('--vendor-name',       required=True,   help="""The vendor name used in configuring namespaces, typically your org or author's name""")
+    parser.add_argument('--author-name',       required=True,   help="""The code author's name""")
+    parser.add_argument('--author-url',        required=True,   help="""The code author's website URL""")
+    parser.add_argument('--copyright-holder',  required=True,   help="""The copyright holder's name""")
+    parser.add_argument('--creation-month',    required=True,   help="""Month of this plugin's creation""")
+    parser.add_argument('--creation-year',     required=True,   help="""Year of this plugin's creation""")
+    parser.add_argument('--license-type',      required=False,  help="""OPTIONAL: Your license type, defaults to GPL v2""")
+    parser.add_argument('--plugin-version',    required=True,   help="""The plugin's version string""")
+    parser.add_argument('--initial-view-name', required=False,  help="""OPTIONAL: Set the name of the initial view. Defaults to Main""")
     # The following commented out declarations are for illustration purposes.
     # parser.add_argument('-a', '--author-name',      required=True, help="""The code author's name""")
     # positional arg declaration parser.add_argument('foo', metavar='N', type=int, nargs='+', help='an integer for the accumulator')
     self.args = parser.parse_args()
 
-    # Basic component creation directory location and permissions
+    self.JCorePluginTypes = [ "actionlog", "authentication", "captcha", "editors", "extension", "filesystem", "media-action", "quickicon", "system", "twofactorauth", "webservices", "api-authentication", "behaviour", "content", "editors-xtd", "fields", "finder", "installer", "privacy", "sampledata", "task", "user", "workflow" ]
+
+
+    # Basic plugin creation directory location and permissions
     self.currDir = sh.pwd().strip()
     self.folderPermissions = "0755"
     self.filePermissions = "0644"
 
-    # Component specific global details
+    # Check for --plugin-type-custom if set, use it, else use --plugin-type
+    # If both are empty, exit with error (argparse must allows unset state for both in order to allow this distinction dynamically)
+    if ( self.args.plugin_type is None and self.args.plugin_type_custom is None ):
+      sys.exit("""ERROR, you must supply either --plugin-type OR --plugin-type-custom, both cannot be left unspecified.\n""")
+    elif ( self.args.plugin_type_custom is not None ):
+      self.plgType = str( self.args.plugin_type_custom ).lower()
+    elif ( self.args.plugin_type is not None and self.args.plugin_type in self.JCorePluginTypes ):
+      self.plgType = str( self.args.plugin_type ).lower()
+    else:
+      sys.exit("""ERROR, invalid core plugin type specified with --plugin-type\nPlease see usage help for details about allowed core types.""")
+
+    # Plugin specific global details
     self.plgName = self.args.plugin_name
+    self.plgManifestNameField = f"plg_{self.plgType}_{self.plgName}"
     self.plgDesc = self.args.plugin_desc
+
     self.plgNameJoomla = self.plgName.lower().replace(" ","")
     self.plgNameInNamespaces = self.plgName.replace(" ","")
 
@@ -87,22 +105,22 @@ Usage Example in Bash/sh/zsh:
     self.langLocaleCode = "en-GB"
 
     # SQL Filenames
-    self.sqlInstallFilename = f"install.mysql.utf8.sql"
-    self.sqlUninstallFilename = f"uninstall.mysql.utf8.sql"
-    self.sqlUpdateFilename = f"{self.plgVersion}.sql"
+    # self.sqlInstallFilename = f"install.mysql.utf8.sql"
+    # self.sqlUninstallFilename = f"uninstall.mysql.utf8.sql"
+    # self.sqlUpdateFilename = f"{self.plgVersion}.sql"
     # This is simply the first table's name for illustrative purposes
-    self.initialTableName = f"storage_table_1"
+    # self.initialTableName = f"storage_table_1"
 
     # If a custom initial view name is specified, use it, else use "Main"
-    self.initialViewName = self.args.initial_view_name if self.args.initial_view_name != None else "Main"
+    # self.initialViewName = self.args.initial_view_name if self.args.initial_view_name != None else "Main"
 
-    self.initialViewNameLower = f"{self.initialViewName.lower()}"
-    self.initialViewMenuItemTitle = f"Menu Item for {self.initialViewName} view"
+    # self.initialViewNameLower = f"{self.initialViewName.lower()}"
+    # self.initialViewMenuItemTitle = f"Menu Item for {self.initialViewName} view"
 
 
-    # Form the base component package folder name and create the folder
+    # Create the Plugin type folder (transparently if not exists) and then the plugin container folder.
     # within the current directory (where the executing python file resides)
-    self.plgFolderName = f"com_{self.plgNameJoomla}"
+    self.plgFolderName = f"{self.plgNameJoomla}"
     self.plgPackageBaseFolder = f"{self.currDir}/{self.plgFolderName}"
 
   # Folder asset, file asset, and writer function helper
@@ -155,12 +173,9 @@ Usage Example in Bash/sh/zsh:
           print( f"""Created file: {fileAsset}, with 644 permissions, and wrote contents:{fileContents[0:85]}...""" )
           return
 
-  def setupSiteAndAdminFolders(self):
-    # Create the site and admin subfolders inside the component base folder
-    self.siteFolder  = f"{self.plgPackageBaseFolder}/site"
-    self.adminFolder = f"{self.plgPackageBaseFolder}/admin"
-    self.createFile(assetType = "d", targetPath = self.siteFolder)
-    self.createFile(assetType = "d", targetPath = self.adminFolder)
+  def setupPluginFolder(self):
+    # Create the base plugin folder
+    self.createFile(assetType = "d", targetPath = self.plgPackageBaseFolder)
 
   def setupPluginManifestFile(self):
     # Create the plugin manifest xml file container
@@ -224,19 +239,6 @@ Usage Example in Bash/sh/zsh:
     """[5:]
     ##################################### END Admin i8n language strings ####################################
     self.createFile(assetType = "f", targetPath = adminLanguageLangLocalCodeSysIniFile, fileContents = adminLanguageLangLocalCodeSysIniFileContents)
-
-  def setupSiteLanguageLangLocalCodeIniFile(self):
-    siteLanguageLangLocalCodeIniFile = f"{self.siteFolder}/language/{self.langLocaleCode}/{self.langLocaleCode}.{self.plgFolderName}.ini"
-    #################################### START site i8n language strings ###################################
-    siteLanguageLangLocalCodeIniFileContents = f"""
-    ; {self.plgName} site Strings
-    ; Copyright (C)  {self.plgCreationYear} {self.plgCopyRightHolder}. All Rights Reserved.
-
-    COM_HELLOWORLD_MSG_HELLO_WORLD="Hello World (i8n translation string)!"
-    COM_HELLOWORLD_MSG_GREETING="This message is coming from the item model!"
-    """[5:]
-    ##################################### END site i8n language strings ####################################
-    self.createFile(assetType = "f", targetPath = siteLanguageLangLocalCodeIniFile, fileContents = siteLanguageLangLocalCodeIniFileContents)
 
   ##########################################################################################################
   ############################################# END i8n setup ##############################################
@@ -334,11 +336,10 @@ Usage Example in Bash/sh/zsh:
 
 
   def execute(self):
-    self.setupSiteAndAdminFolders()
+    self.setupPluginFolder()
     self.setupPluginManifestFile()
     self.setupAdminLanguageLangLocalCodeIniFile()
     self.setupAdminLanguageLangLocalCodeSysIniFile()
-    self.setupSiteLanguageLangLocalCodeIniFile()
     self.setupSqlAssetFolder()
     self.setupAdminSqlInstallFile()
     self.setupAdminSqlUninstallFile()
