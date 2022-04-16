@@ -26,7 +26,7 @@ Usage Example in Bash/sh/zsh:
   --creation-month="April" \\
   --creation-year="2022" \\
   --plugin-version="0.0.1" \\
-  --add-folders="tmpl" \\
+  --add-folders="tmpl,lib,src" \\
   --add-sql-support
 
   From there, test your plugin scaffold by installing the zip file into Joomla.
