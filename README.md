@@ -12,8 +12,8 @@ PLEASE NOTE: You will need Python 3.6 or later and the `os`, `sh`, and `argparse
 - To have a command line configurable J! 4 plugin skeleton maker (under construction)
 - To have a command line configurable J! 4 module skeleton maker (in backlog)  
    
-##### 04-15-2022: The plugin maker is nearing completion (check pluginMaker branch for details) initial code-gen template is going to be the webservices code template (there are 25 types of plugins in J! 4, each with specific code template nuances), the webservices template will be completed first, then others will come online. Module maker is in backlog. Useful working features are optional sql support generation, and optional folder generation.  
-##### 04-12-2022: The component maker is ready, the plugin maker is under construction (refactor from component maker) and module maker is in backlog.
+`04-15-2022:` The plugin maker is nearing completion (check pluginMaker branch for details) initial code-gen template is going to be the webservices code template (there are 25 types of plugins in J! 4, each with specific code template nuances), the webservices template will be completed first, then others will come online. Module maker is in backlog. Useful working features are optional sql support generation, and optional folder generation.  
+`04-12-2022:` The component maker is ready, the plugin maker is under construction (refactor from component maker) and module maker is in backlog.
 
 ## How to use:
 
