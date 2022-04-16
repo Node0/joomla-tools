@@ -152,9 +152,9 @@ Usage Example in Bash/sh/zsh:
     # self.initialViewNameLower = f"{self.initialViewName.lower()}"
     # self.initialViewMenuItemTitle = f"Menu Item for {self.initialViewName} view"
 
-  # Check for user supplied sql support flag and if set, create sql assets and prepare manifest partial 
+  # Check for user supplied sql support flag and if set, create sql assets and prepare manifest partial
   def handleSqlSupport(self):
-    if ( self.args.add_sql_support is not None ):
+    if ( self.args.add_sql_support ):
       # SQL folder name
       self.sqlDirName = 'sql'
       # SQL Filenames
@@ -193,13 +193,22 @@ Usage Example in Bash/sh/zsh:
   # If there is a comma in the string, split into an array and create a folder named after each element of the array
   # In the event there is no comma, just create one folder from the string
   def handleOptionalFolders(self):
+    self.optFolderNameManifestPartial = ""
     if ( self.args.add_folders is not None and type(self.args.add_folders) is str ):
       self.optFolderList = self.args.add_folders
       if ( ',' in self.optFolderList ):
-        for folder in self.optFolderList.split(','):
+        for idx, folder in enumerate(self.optFolderList.split(',')):
           self.createFile(assetType = "d", targetPath = f"{self.plgPackageBaseFolder}/{folder}")
+          # If this is the first time through the loop template the folder element string without pre-padding
+          if ( idx == 0):
+            self.optFolderNameManifestPartial += f"""<folder>{folder}</folder>\n"""
+          else:
+            # If this is the 2nd time through the loop, pre-pad the folder element string with
+            # indentation relative to the manifest file string.
+            self.optFolderNameManifestPartial += f"""          <folder>{folder}</folder>\n"""
       else:
         folder = self.optFolderList
+        self.optFolderNameManifestPartial = f"""<folder>{folder}</folder>"""
         self.createFile(assetType = "d", targetPath = f"{self.plgPackageBaseFolder}/{folder}")
 
   # Folder asset, file asset, and writer function helper
@@ -279,6 +288,7 @@ Usage Example in Bash/sh/zsh:
         <files>
           <filename plugin="{self.plgNameJoomla}">{self.plgNameJoomla}.php</filename>
           <folder>language</folder>
+          {self.optFolderNameManifestPartial}
           {self.sqlDirNameManifestPartial}
         </files>
 
@@ -409,12 +419,16 @@ Usage Example in Bash/sh/zsh:
   # self.createFile(assetType = "f", targetPath = admin__PhpFile, fileContents = admin__PhpFileContents)
 
   def finishAndCreateInstallable(self):
-    # Recap the structure of created assets.
-    dirStructCreated = sh.tree( self.plgPackageBaseFolder )
-    print(dirStructCreated)
+    if ( sh.which("tree") is not None ):
+      # Recap the structure of created assets.
+      dirStructCreated = sh.tree( self.plgPackageBaseFolder )
+      print(dirStructCreated)
+    else:
+      print("\n\nIf you'd like to see directory tree visualizations (of the generated extension)\nInstall the tree program: yum install tree, or apt-get install tree\n\n")
 
     # Create the installable package
     sh.zip( "-r", f"{self.plgFolderName}.zip", f"{self.plgFolderName}" )
+    print("Generation of extension is finished!")
 
 
   def execute(self):
