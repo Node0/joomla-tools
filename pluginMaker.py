@@ -26,9 +26,7 @@ Usage Example in Bash/sh/zsh:
   --creation-month="April" \\
   --creation-year="2022" \\
   --plugin-version="0.0.1" \\
-  --add-tmpl-dir="tmpl" \\
-  --add-src-dir="src" \\
-  --add-lib-dir="lib" \\
+  --add-folders="tmpl" \\
   --add-sql-support
 
   From there, test your plugin scaffold by installing the zip file into Joomla.
@@ -67,7 +65,7 @@ Usage Example in Bash/sh/zsh:
                         help="""OPTIONAL: Set the name of the initial view. If argument not passed this defaults to Main""")
     parser.add_argument('--add-folders',       required=False,  metavar='e.g. --add-folders="tmpl"',
                         help="""OPTIONAL: If the user supplies either a single name or a list of comma separated names. This option creates folders from those names and updates the manifest file accordingly.""")
-    parser.add_argument('--add-sql-support',  required=False,   default=False, action='store_true',
+    parser.add_argument('--add-sql-support',   required=False,  default=False, action='store_true',
                         help="""OPTIONAL: This is a flag that if passed as --add-sql-support will create an sql directory with standard install/uninstall/update sql files and manifest xml hooks.""")
     # The following commented out declarations are for illustration purposes.
     # parser.add_argument('-a', '--author-name',      required=True, help="""The code author's name""")
@@ -142,12 +140,26 @@ Usage Example in Bash/sh/zsh:
     #   self.libDirNameManifestPartial = ""
 
     # If the --add-sql-support flag is set (just a bool) then setup the sql support
-    if ( self.args.add_sql_support is not None):
+
+
+    # Initial language locale to setup
+    self.langLocaleCode = "en-GB"
+
+
+    # If a custom initial view name is specified, use it, else use "Main"
+    # self.initialViewName = self.args.initial_view_name if self.args.initial_view_name != None else "Main"
+
+    # self.initialViewNameLower = f"{self.initialViewName.lower()}"
+    # self.initialViewMenuItemTitle = f"Menu Item for {self.initialViewName} view"
+
+  # Check for user supplied sql support flag and if set, create sql assets and prepare manifest partial 
+  def handleSqlSupport(self):
+    if ( self.args.add_sql_support is not None ):
       # SQL folder name
       self.sqlDirName = 'sql'
       # SQL Filenames
-      self.sqlInstallFilename = f"install.mysql.utf8.sql"
-      self.sqlUninstallFilename = f"uninstall.mysql.utf8.sql"
+      self.sqlInstallFilename = "install.mysql.utf8.sql"
+      self.sqlUninstallFilename = "uninstall.mysql.utf8.sql"
       self.sqlUpdateFilename = f"{self.plgVersion}.sql"
       # This is simply the first table's name for illustrative purposes
       self.initialTableName = f"{self.plgManifestNameField}_storage_table_1"
@@ -169,23 +181,26 @@ Usage Example in Bash/sh/zsh:
                 <schemapath type="mysql">sql/updates/mysql</schemapath>
             </schemas>
         </update>"""[7:]
+      self.setupSqlAssetFolder()
+      self.setupSqlInstallFile()
+      self.setupSqlUninstallFile()
+      self.setupSqlUpdateFile()
     else:
       self.sqlDirNameManifestPartial = ""
       self.sqlHooksInManifestPartial = ""
 
-    self.createFile(assetType = "d", targetPath = f"{self.currDir}/foo")
-    # Initial language locale to setup
-    self.langLocaleCode = "en-GB"
-
-
-    # If a custom initial view name is specified, use it, else use "Main"
-    # self.initialViewName = self.args.initial_view_name if self.args.initial_view_name != None else "Main"
-
-    # self.initialViewNameLower = f"{self.initialViewName.lower()}"
-    # self.initialViewMenuItemTitle = f"Menu Item for {self.initialViewName} view"
-
-
-
+  # Check for any optional folders the user may have specified
+  # If there is a comma in the string, split into an array and create a folder named after each element of the array
+  # In the event there is no comma, just create one folder from the string
+  def handleOptionalFolders(self):
+    if ( self.args.add_folders is not None and type(self.args.add_folders) is str ):
+      self.optFolderList = self.args.add_folders
+      if ( ',' in self.optFolderList ):
+        for folder in self.optFolderList.split(','):
+          self.createFile(assetType = "d", targetPath = f"{self.plgPackageBaseFolder}/{folder}")
+      else:
+        folder = self.optFolderList
+        self.createFile(assetType = "d", targetPath = f"{self.plgPackageBaseFolder}/{folder}")
 
   # Folder asset, file asset, and writer function helper
   def createFile(self, assetType = "f", targetPath = None, fileContents = None):
@@ -246,7 +261,7 @@ Usage Example in Bash/sh/zsh:
     pluginManifestFile = f"{self.plgPackageBaseFolder}/{self.plgNameJoomla}.xml"
     ##########################################################################################################
     ##########################################################################################################
-    ###################################### START Plugin Manifest XML ######################################
+    ######################################## START Plugin Manifest XML #######################################
     ##########################################################################################################
     ##########################################################################################################
     pluginManifestContents = f"""
@@ -404,20 +419,11 @@ Usage Example in Bash/sh/zsh:
 
   def execute(self):
     self.setupPluginFolder()
-    self.setupPluginManifestFile()
     self.setupLanguageLangLocalCodeIniFile()
     self.setupLanguageLangLocalCodeSysIniFile()
-    if ( self.args.add_tmpl_dir is not None):
-      self.createFile(assetType = "d", targetPath = self.tmplDirPath)
-    if ( self.args.add_src_dir is not None):
-      self.createFile(assetType = "d", targetPath = self.srcDirPath)
-    if ( self.args.add_lib_dir is not None):
-      self.createFile(assetType = "d", targetPath = self.libDirPath)
-    if ( self.args.add_sql_support is not None):
-      self.setupSqlAssetFolder()
-      self.setupSqlInstallFile()
-      self.setupSqlUninstallFile()
-      self.setupSqlUpdateFile()
+    self.handleSqlSupport()
+    self.handleOptionalFolders()
+    self.setupPluginManifestFile()
     self.finishAndCreateInstallable()
 
 PM = PluginMaker()
