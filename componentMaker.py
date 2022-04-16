@@ -801,14 +801,14 @@ Usage Example in Bash/sh/zsh:
       dirStructCreated = sh.tree( self.plgPackageBaseFolder )
       print(dirStructCreated)
     else:
-      print("If you'd like to see directory tree visualizations (of the generated extension)\nInstall the tree program: yum install tree, or apt-get install tree\n")
-
-    # Create the installable package
-    sh.zip( "-r", f"{self.plgFolderName}.zip", f"{self.plgFolderName}" )
-    print("Generation of extension is finished!")
-
+      print("\n\nIf you'd like to see directory tree visualizations (of the generated extension)\nInstall the tree program: yum install tree, or apt-get install tree\n\n")
+    
     # Create the installable package
     sh.zip( "-r", f"{self.comFolderName}.zip", f"{self.comFolderName}" )
+
+    print("Generation of extension is finished!")
+
+
 
 
   def execute(self):
