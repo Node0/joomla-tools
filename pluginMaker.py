@@ -292,6 +292,11 @@ Usage Example in Bash/sh/zsh:
           {self.sqlDirNameManifestPartial}
         </files>
 
+        <languages>
+          <language tag="{self.langLocaleCode}">{self.langLocaleCode}.{self.plgManifestNameField}.ini</language>
+          <language tag="{self.langLocaleCode}">{self.langLocaleCode}.{self.plgManifestNameField}.sys.ini</language>
+        </languages>
+
         {self.sqlHooksInManifestPartial}
 
     </extension>
@@ -308,7 +313,7 @@ Usage Example in Bash/sh/zsh:
     ##########################################################################################################
 
   def setupLanguageLangLocalCodeIniFile(self):
-    languageLangLocalCodeIniFile = f"{self.plgPackageBaseFolder}/language/{self.langLocaleCode}/{self.langLocaleCode}.{self.plgFolderName}.ini"
+    languageLangLocalCodeIniFile = f"{self.plgPackageBaseFolder}/language/{self.langLocaleCode}/{self.langLocaleCode}.{self.plgManifestNameField}.ini"
     #################################### START Admin i8n language strings ###################################
     languageLangLocalCodeIniFileContents = f"""
     ; {self.plgName} Translation Strings
@@ -320,7 +325,7 @@ Usage Example in Bash/sh/zsh:
     self.createFile(assetType = "f", targetPath = languageLangLocalCodeIniFile, fileContents = languageLangLocalCodeIniFileContents)
 
   def setupLanguageLangLocalCodeSysIniFile(self):
-    languageLangLocalCodeSysIniFile = f"{self.plgPackageBaseFolder}/language/{self.langLocaleCode}/{self.langLocaleCode}.{self.plgFolderName}.sys.ini"
+    languageLangLocalCodeSysIniFile = f"{self.plgPackageBaseFolder}/language/{self.langLocaleCode}/{self.langLocaleCode}.{self.plgManifestNameField}.sys.ini"
     #################################### START Admin i8n language strings ###################################
     languageLangLocalCodeSysIniFileContents = f"""
     ; {self.plgName} Sys.ini Translation Strings
