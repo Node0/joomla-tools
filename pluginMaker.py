@@ -29,7 +29,7 @@ Usage Example in Bash/sh/zsh:
   --add-tmpl-dir="tmpl" \\
   --add-src-dir="src" \\
   --add-lib-dir="lib" \\
-  --add-sql-dir
+  --add-sql-support
 
   From there, test your plugin scaffold by installing the zip file into Joomla.
   You may then copy the generated folder into your git repo and begin development.""")
@@ -65,14 +65,10 @@ Usage Example in Bash/sh/zsh:
                         help="""The plugin's version string""")
     parser.add_argument('--initial-view-name', required=False,  metavar='e.g. --initial-view-name="CanPluginsEvenHaveViews"',
                         help="""OPTIONAL: Set the name of the initial view. If argument not passed this defaults to Main""")
-    parser.add_argument('--add-tmpl-dir',      required=False,  metavar='e.g. --add-tmpl-dir="tmpl"',
-                        help="""OPTIONAL: Create a template directory. If not passed, no template directory is made.""")
-    parser.add_argument('--add-src-dir',       required=False,  metavar='e.g. --add-src-dir="src"',
-                        help="""OPTIONAL: Create a source files directory. If not passed, no template directory is made.""")
-    parser.add_argument('--add-lib-dir',       required=False,  metavar='e.g. --add-lib-dir="lib"',
-                        help="""OPTIONAL: Create a local library directory. If not passed, no local library directory is made.""")
-    parser.add_argument('--add-sql-dir',       required=False,  metavar='e.g. --add-sql-dir',
-                        help="""OPTIONAL: Create a local library directory. If not passed, no local library directory is made.""")
+    parser.add_argument('--add-folders',       required=False,  metavar='e.g. --add-folders="tmpl"',
+                        help="""OPTIONAL: If the user supplies either a single name or a list of comma separated names. This option creates folders from those names and updates the manifest file accordingly.""")
+    parser.add_argument('--add-sql-support',  required=False,   default=False, action='store_true',
+                        help="""OPTIONAL: This is a flag that if passed as --add-sql-support will create an sql directory with standard install/uninstall/update sql files and manifest xml hooks.""")
     # The following commented out declarations are for illustration purposes.
     # parser.add_argument('-a', '--author-name',      required=True, help="""The code author's name""")
     # positional arg declaration parser.add_argument('foo', metavar='N', type=int, nargs='+', help='an integer for the accumulator')
@@ -124,44 +120,63 @@ Usage Example in Bash/sh/zsh:
     self.plgPackageBaseFolder = f"{self.currDir}/{self.plgFolderName}"
 
 
-    if ( self.args.add_tmpl_dir is not None):
-      self.tmplDirName = self.args.add_tmpl_dir
-      self.tmplDirPath = f"{self.plgPackageBaseFolder}/{self.tmplDirName}"
-      self.tmplDirNameManifestPartial = f"<folder>{self.tmplDirName}</folder>"
-    else:
-      self.tmplDirNameManifestPartial = ""
+    # if ( self.args.add_tmpl_dir is not None):
+    #   self.tmplDirName = self.args.add_tmpl_dir
+    #   self.tmplDirPath = f"{self.plgPackageBaseFolder}/{self.tmplDirName}"
+    #   self.tmplDirNameManifestPartial = f"<folder>{self.tmplDirName}</folder>"
+    # else:
+    #   self.tmplDirNameManifestPartial = ""
 
-    if ( self.args.add_src_dir is not None):
-      self.srcDirName = self.args.add_src_dir
-      self.srcDirPath = f"{self.plgPackageBaseFolder}/{self.srcDirName}"
-      self.srcDirNameManifestPartial = f"<folder>{self.srcDirName}</folder>"
-    else:
-      self.srcDirNameManifestPartial = ""
+    # if ( self.args.add_src_dir is not None):
+    #   self.srcDirName = self.args.add_src_dir
+    #   self.srcDirPath = f"{self.plgPackageBaseFolder}/{self.srcDirName}"
+    #   self.srcDirNameManifestPartial = f"<folder>{self.srcDirName}</folder>"
+    # else:
+    #   self.srcDirNameManifestPartial = ""
 
-    if ( self.args.add_lib_dir is not None):
-      self.libDirName = self.args.add_lib_dir
-      self.libDirPath = f"{self.plgPackageBaseFolder}/{self.libDirName}"
-      self.libDirNameManifestPartial = f"<folder>{self.libDirName}</folder>"
-    else:
-      self.libDirNameManifestPartial = ""
+    # if ( self.args.add_lib_dir is not None):
+    #   self.libDirName = self.args.add_lib_dir
+    #   self.libDirPath = f"{self.plgPackageBaseFolder}/{self.libDirName}"
+    #   self.libDirNameManifestPartial = f"<folder>{self.libDirName}</folder>"
+    # else:
+    #   self.libDirNameManifestPartial = ""
 
-    if ( self.args.add_sql_dir is not None):
+    # If the --add-sql-support flag is set (just a bool) then setup the sql support
+    if ( self.args.add_sql_support is not None):
+      # SQL folder name
       self.sqlDirName = 'sql'
+      # SQL Filenames
+      self.sqlInstallFilename = f"install.mysql.utf8.sql"
+      self.sqlUninstallFilename = f"uninstall.mysql.utf8.sql"
+      self.sqlUpdateFilename = f"{self.plgVersion}.sql"
+      # This is simply the first table's name for illustrative purposes
+      self.initialTableName = f"{self.plgManifestNameField}_storage_table_1"
       self.sqlDirPath = f"{self.plgPackageBaseFolder}/{self.sqlDirName}"
       self.sqlDirNameManifestPartial = f"<folder>{self.sqlDirName}</folder>"
+      self.sqlHooksInManifestPartial = f"""
+      <install>
+            <sql>
+                <file driver="mysql" charset="utf8">sql/{self.sqlInstallFilename}</file>
+            </sql>
+        </install>
+        <uninstall>
+            <sql>
+                <file driver="mysql" charset="utf8">sql/{self.sqlUninstallFilename}</file>
+            </sql>
+        </uninstall>
+        <update>
+            <schemas>
+                <schemapath type="mysql">sql/updates/mysql</schemapath>
+            </schemas>
+        </update>"""[7:]
     else:
       self.sqlDirNameManifestPartial = ""
+      self.sqlHooksInManifestPartial = ""
 
-
+    self.createFile(assetType = "d", targetPath = f"{self.currDir}/foo")
     # Initial language locale to setup
     self.langLocaleCode = "en-GB"
 
-    # SQL Filenames
-    self.sqlInstallFilename = f"install.mysql.utf8.sql"
-    self.sqlUninstallFilename = f"uninstall.mysql.utf8.sql"
-    self.sqlUpdateFilename = f"{self.plgVersion}.sql"
-    # This is simply the first table's name for illustrative purposes
-    self.initialTableName = f"{self.plgManifestNameField}_storage_table_1"
 
     # If a custom initial view name is specified, use it, else use "Main"
     # self.initialViewName = self.args.initial_view_name if self.args.initial_view_name != None else "Main"
@@ -249,27 +264,10 @@ Usage Example in Bash/sh/zsh:
         <files>
           <filename plugin="{self.plgNameJoomla}">{self.plgNameJoomla}.php</filename>
           <folder>language</folder>
-          {self.tmplDirNameManifestPartial}
-          {self.srcDirNameManifestPartial}
-          {self.libDirNameManifestPartial}
           {self.sqlDirNameManifestPartial}
         </files>
 
-        <install>
-            <sql>
-                <file driver="mysql" charset="utf8">sql/{self.sqlInstallFilename}</file>
-            </sql>
-        </install>
-        <uninstall>
-            <sql>
-                <file driver="mysql" charset="utf8">sql/{self.sqlUninstallFilename}</file>
-            </sql>
-        </uninstall>
-        <update>
-            <schemas>
-                <schemapath type="mysql">sql/updates/mysql</schemapath>
-            </schemas>
-        </update>
+        {self.sqlHooksInManifestPartial}
 
     </extension>
     """[5:]
@@ -415,7 +413,7 @@ Usage Example in Bash/sh/zsh:
       self.createFile(assetType = "d", targetPath = self.srcDirPath)
     if ( self.args.add_lib_dir is not None):
       self.createFile(assetType = "d", targetPath = self.libDirPath)
-    if ( self.args.add_sql_dir is not None):
+    if ( self.args.add_sql_support is not None):
       self.setupSqlAssetFolder()
       self.setupSqlInstallFile()
       self.setupSqlUninstallFile()
