@@ -20,7 +20,7 @@ PLEASE NOTE: You will need Python 3.6 or later and the `os`, `sh`, and `argparse
 
 ### Component maker usage:
 
-```
+```bash
 ./componentMaker.py \
   --component-name="Generic Hello World" \
   --component-desc="A generic hello world component for J! 4" \
