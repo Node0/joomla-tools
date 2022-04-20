@@ -24,7 +24,8 @@ Usage Example in Bash/sh/zsh:
   --copyright-holder="Joe Hacobian" \\
   --creation-month="April" \\
   --creation-year="2022" \\
-  --component-version="0.0.1"
+  --component-version="0.0.1" \\
+  --api-controller-names="users,sports,weather,airlinetickets"
 
   From there, test your component scaffold by installing the zip file into Joomla.
   You may then copy the generated folder into your git repo and begin development.""")
@@ -40,6 +41,7 @@ Usage Example in Bash/sh/zsh:
     parser.add_argument('--license-type',     required=False, help="""OPTIONAL: Your license type, defaults to GPL v2""")
     parser.add_argument('--component-version',required=True, help="""The component's version string""")
     parser.add_argument('--initial-view-name',required=False, help="""OPTIONAL: Set the name of the initial view. Defaults to Main""")
+    parser.add_argument('--api-controller-names',required=False, help="""OPTIONAL: Creates a set of API controllers and JSON API views taken in comma separated form from the user. If None given, Defaults to creating a Main controller.""")
     # The following commented out declarations are for illustration purposes.
     # parser.add_argument('-a', '--author-name',      required=True, help="""The code author's name""")
     # positional arg declaration parser.add_argument('foo', metavar='N', type=int, nargs='+', help='an integer for the accumulator')
@@ -148,7 +150,7 @@ Usage Example in Bash/sh/zsh:
     # Create the site and admin subfolders inside the component base folder
     self.siteFolder  = f"{self.comPackageBaseFolder}/site"
     self.adminFolder = f"{self.comPackageBaseFolder}/admin"
-    self.apiFolder   = f"{self.comPackageBaseFolder}/api/src/"
+    self.apiFolder   = f"{self.comPackageBaseFolder}/api/src"
     self.apiViewFolder = f"{self.apiFolder}/view"
     self.apiControllerFolder = f"{self.apiFolder}/controller"
 
@@ -269,6 +271,184 @@ Usage Example in Bash/sh/zsh:
     ##########################################################################################################
     self.createFile(assetType = "f", targetPath = componentManifestFile, fileContents = componentManifestContents)
 
+  def setupApiControllerAndViewPhpFiles(self):
+  # Check for any optional folders the user may have specified
+  # If there is a comma in the string, split into an array and create a folder named after each element of the array
+  # In the event there is no comma, just create one folder from the string
+    #self.optFolderNameManifestPartial = ""
+    # If the user did not choose api controller names, default to Main.
+    if ( self.args.api_controller_names is None or type(self.args.api_controller_names) is not str):
+      self.apiControllerNamesStr = "Main"
+
+    if ( self.args.api_controller_names is not None and type(self.args.api_controller_names) is str ):
+      self.apiControllerNamesStr = self.args.api_controller_names
+      if ( ',' in self.apiControllerNamesStr ):
+        for idx, controllerName in enumerate(self.apiControllerNamesStr.split(',')):
+          # First customize a generic api controller php template
+          self.apiControllerPhpFileContents = f"""
+          <?php
+namespace {self.vendorName}\Component\{self.comNameInNamespaces}\Api\Controller;
+
+defined('_JEXEC') or die;
+
+use Joomla\CMS\MVC\Controller\ApiController;
+use Joomla\Component\Fields\Administrator\Helper\FieldsHelper;
+
+// {{controllerName}} here is merely a placeholder for the shared classnaming system across controllers, view folders (and possibly models)
+class {controllerName.capitalize()}Controller extends ApiController
+{{
+	protected $contentType = '{controllerName.lower()}'; /* My understanding is that this maps to the desired model name */
+	protected $default_view = '{controllerName.lower()}'; /* This maps to the folder name containing the JSON API view */
+
+	protected function save($recordKey = null)
+	{{
+		$data = (array) json_decode($this->input->json->getRaw(), true);
+		foreach (FieldsHelper::getFields('{self.comFolderName}.{controllerName.lower()}') as $field) // This probably looks for a model of the same name
+		{{
+			if (isset($data[$field->name]))
+			{{
+				!isset($data['com_fields']) && $data['com_fields'] = [];
+				$data['com_fields'][$field->name] = $data[$field->name];
+				unset($data[$field->name]);
+			}}
+		}}
+		$this->input->set('data', $data);
+		return parent::save($recordKey);
+	}}
+}}
+          """[11:]
+          # then create the controller file and write contents to it in the controller folder
+          self.createFile(assetType = "f", targetPath = f"{self.apiControllerFolder}/{controllerName.capitalize()}Controller.php", fileContents = self.apiControllerPhpFileContents )
+          # Now go make the folders under the view directory matching these controller names
+          self.createFile( assetType = "d", targetPath = f"{self.apiViewFolder}/{controllerName}" )
+          self.apiViewPhpFileContents = f"""
+          <?php
+namespace {self.vendorName}\Component\{self.comNameInNamespaces}\Api\View\{controllerName.capitalize()};
+
+defined('_JEXEC') or die;
+
+use Joomla\CMS\MVC\View\JsonApiView as BaseApiView;
+use Joomla\Component\Fields\Administrator\Helper\FieldsHelper;
+
+class JsonapiView extends BaseApiView
+{{
+	protected $fieldsToRenderItem = ['id', 'alias', 'name', 'catid'];
+	protected $fieldsToRenderList = ['id', 'alias', 'name', 'catid'];
+
+	public function displayList(array $items = null)
+	{{
+		foreach (FieldsHelper::getFields('{self.comFolderName}.{controllerName.lower()}') as $field)
+		{{
+			$this->fieldsToRenderList[] = $field->id;
+		}}
+		return parent::displayList();
+	}}
+
+	public function displayItem($item = null)
+	{{
+		foreach (FieldsHelper::getFields('{self.comFolderName}.{controllerName.lower()}') as $field)
+		{{
+			$this->fieldsToRenderItem[] = $field->name;
+		}}
+		return parent::displayItem();
+	}}
+
+	protected function prepareItem($item)
+	{{
+		foreach (FieldsHelper::getFields('{self.comFolderName}.{controllerName.lower()}', $item, true) as $field)
+		{{
+			$item->{{$field->name}} = isset($field->apivalue) ? $field->apivalue : $field->rawvalue;
+		}}
+		return parent::prepareItem($item);
+	}}
+}}
+          """[11:]
+          # then create the view file and write contents to it in the view folder
+          self.createFile(assetType = "f", targetPath = f"{self.apiViewFolder}/{controllerName.capitalize()}/JsonapiView.php", fileContents = self.apiViewPhpFileContents )
+      else:
+        # If the user only supplies a single string (non comma separated, then just create a single pair of controller and view files)
+        self.apiControllerName = self.apiControllerNamesStr
+        self.apiControllerPhpFileContents = f"""
+        <?php
+namespace {self.vendorName}\Component\{self.comNameInNamespaces}\Api\Controller;
+
+defined('_JEXEC') or die;
+
+use Joomla\CMS\MVC\Controller\ApiController;
+use Joomla\Component\Fields\Administrator\Helper\FieldsHelper;
+
+// {{self.apiControllerName}} here is merely a placeholder for the shared classnaming system across controllers, view folders (and possibly models)
+class {self.apiControllerName.capitalize()}Controller extends ApiController
+{{
+	protected $contentType = '{self.apiControllerName.lower()}'; /* My understanding is that this maps to the desired model name */
+	protected $default_view = '{self.apiControllerName.lower()}'; /* This maps to the folder name containing the JSON API view */
+
+	protected function save($recordKey = null)
+	{{
+		$data = (array) json_decode($this->input->json->getRaw(), true);
+		foreach (FieldsHelper::getFields('{self.comFolderName}.{self.apiControllerName.lower()}') as $field) // This probably looks for a model of the same name
+		{{
+			if (isset($data[$field->name]))
+			{{
+				!isset($data['com_fields']) && $data['com_fields'] = [];
+				$data['com_fields'][$field->name] = $data[$field->name];
+				unset($data[$field->name]);
+			}}
+		}}
+		$this->input->set('data', $data);
+		return parent::save($recordKey);
+	}}
+}}
+        """[11:]
+        # then create the controller file and write contents to it in the controller folder
+        self.createFile(assetType = "f", targetPath = f"{self.apiControllerFolder}/{self.apiControllerName.capitalize()}Controller.php", fileContents = self.apiControllerPhpFileContents )
+        # Now go make the folders under the view directory matching these controller names
+        self.createFile( assetType = "d", targetPath = f"{self.apiViewFolder}/{self.apiControllerName}" )
+        self.apiViewPhpFileContents = f"""
+        <?php
+namespace {self.vendorName}\Component\{self.comNameInNamespaces}\Api\View\{self.apiControllerName.capitalize()};
+
+defined('_JEXEC') or die;
+
+use Joomla\CMS\MVC\View\JsonApiView as BaseApiView;
+use Joomla\Component\Fields\Administrator\Helper\FieldsHelper;
+
+class JsonapiView extends BaseApiView
+{{
+	protected $fieldsToRenderItem = ['id', 'alias', 'name', 'catid'];
+	protected $fieldsToRenderList = ['id', 'alias', 'name', 'catid'];
+
+	public function displayList(array $items = null)
+	{{
+		foreach (FieldsHelper::getFields('{self.comFolderName}.{self.apiControllerName.lower()}') as $field)
+		{{
+			$this->fieldsToRenderList[] = $field->id;
+		}}
+		return parent::displayList();
+	}}
+
+	public function displayItem($item = null)
+	{{
+		foreach (FieldsHelper::getFields('{self.comFolderName}.{self.apiControllerName.lower()}') as $field)
+		{{
+			$this->fieldsToRenderItem[] = $field->name;
+		}}
+		return parent::displayItem();
+	}}
+
+	protected function prepareItem($item)
+	{{
+		foreach (FieldsHelper::getFields('{self.comFolderName}.{self.apiControllerName.lower()}', $item, true) as $field)
+		{{
+			$item->{{$field->name}} = isset($field->apivalue) ? $field->apivalue : $field->rawvalue;
+		}}
+		return parent::prepareItem($item);
+	}}
+}}
+        """[11:]
+        # then create the view file and write contents to it in the view folder
+        self.createFile(assetType = "f", targetPath = f"{self.apiViewFolder}/{self.apiControllerName.capitalize()}/JsonapiView.php", fileContents = self.apiViewPhpFileContents )
+
   def setupAdminServicesProviderPhpFile(self):
     ################################### Create admin services provider.php ###################################
     adminServicesProviderPhpFile = f"{self.adminFolder}/services/provider.php"
@@ -304,6 +484,7 @@ Usage Example in Bash/sh/zsh:
     """[5:]
     ##################################### END Admin services provider.php ####################################
     self.createFile(assetType = "f", targetPath = adminServicesProviderPhpFile, fileContents = adminServicesProviderPhpFileContents)
+
 
   ##########################################################################################################
   ############################################ START i8n setup #############################################
@@ -826,6 +1007,7 @@ Usage Example in Bash/sh/zsh:
   def execute(self):
     self.setupSiteAndAdminFolders()
     self.setupComponentManifestFile()
+    self.setupApiControllerAndViewPhpFiles()
     self.setupAdminServicesProviderPhpFile()
     self.setupAdminLanguageLangLocalCodeIniFile()
     self.setupAdminLanguageLangLocalCodeSysIniFile()
