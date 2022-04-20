@@ -2,6 +2,9 @@
 # Exclude .DS_Store files
 .DS_Store
 
+# Ignore prettierrc
+.prettierrc
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

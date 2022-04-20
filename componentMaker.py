@@ -148,8 +148,14 @@ Usage Example in Bash/sh/zsh:
     # Create the site and admin subfolders inside the component base folder
     self.siteFolder  = f"{self.comPackageBaseFolder}/site"
     self.adminFolder = f"{self.comPackageBaseFolder}/admin"
+    self.apiFolder   = f"{self.comPackageBaseFolder}/api/src/"
+    self.apiViewFolder = f"{self.apiFolder}/view"
+    self.apiControllerFolder = f"{self.apiFolder}/controller"
+
     self.createFile(assetType = "d", targetPath = self.siteFolder)
     self.createFile(assetType = "d", targetPath = self.adminFolder)
+    self.createFile(assetType = "d", targetPath = self.apiViewFolder)
+    self.createFile(assetType = "d", targetPath = self.apiControllerFolder)
 
   def setupComponentManifestFile(self):
     # Create the component manifest xml file container
@@ -231,6 +237,12 @@ Usage Example in Bash/sh/zsh:
                 <language tag="{self.langLocaleCode}">admin/language/{self.langLocaleCode}/{self.langLocaleCode}.{self.comFolderName}.sys.ini</language>
             </languages>
         </administration>
+
+        <api>
+          <files folder="api">
+            <folder>src</folder>
+          </files>
+        </api>
 
         <install>
             <sql>
@@ -798,7 +810,7 @@ Usage Example in Bash/sh/zsh:
   def finishAndCreateInstallable(self):
     if ( sh.which("tree") is not None ):
       # Recap the structure of created assets.
-      dirStructCreated = sh.tree( self.plgPackageBaseFolder )
+      dirStructCreated = sh.tree( self.comPackageBaseFolder )
       print(dirStructCreated)
     else:
       print("\n\nIf you'd like to see directory tree visualizations (of the generated extension)\nInstall the tree program: yum install tree, or apt-get install tree\n\n")
