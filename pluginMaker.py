@@ -265,6 +265,85 @@ Usage Example in Bash/sh/zsh:
     # Create the base plugin folder
     self.createFile(assetType = "d", targetPath = self.plgPackageBaseFolder)
 
+  # This method handles preparation of the MANY types of plugin php files' contents
+  # For now we'll stick to handling the webservices type, but build handling logic to
+  # dynamically substitute plugin file contents when other types are introduced.
+  def preparePluginPhpFileContents(self):
+    pluginPhpFileContents = ""
+    plgClassName = f"Plg{self.plgType.capitalize()}{self.plgNameJoomla.capitalize()}"
+    # Handle templates for core types.
+    if ( self.args.plugin_type is not None ):
+      print(self.plgType)
+      # Start IF/ELIF cascade to handle template string for each core type.
+      if ( self.plgType == "webservices" ):
+        pluginPhpFileContents = f"""
+        <?php
+defined('_JEXEC') or die;
+
+use Joomla\CMS\Plugin\CMSPlugin;
+use Joomla\CMS\Router\ApiRouter;
+
+class {plgClassName} extends CMSPlugin
+{{
+	protected $autoloadLanguage = true;
+	public function onBeforeApiRoute(&$router)
+	{{
+		$router->createCRUDRoutes(
+			'v1/<endpointString>', /* An arbitrary route endpoint string */
+			'<ControllerName>', /* The controller file's <Name> segment in <SITEROOT>/api/components/com_<yourComName>/src/controller/<Name>Controller.php
+      OMIT the "Controller" part from the php file name when substituting in <ControllerName> */
+			['component' => 'com_<yourComName>']
+		);
+		$router->createCRUDRoutes(
+			'v1/<endpointString>/categories',
+			'categories',
+			['component' => 'com_categories', 'extension' => 'com_<yourComName>']
+		);
+	}}
+}}
+        """[9:]
+        return pluginPhpFileContents
+
+      elif ( self.plgType == "user" ):
+        pluginPhpFileContents = f"""
+        <?php
+defined('_JEXEC') or die;
+
+use Joomla\CMS\Plugin\CMSPlugin;
+class {plgClassName} extends CMSPlugin
+{{
+	protected $autoloadLanguage = true;
+  public function PLEASE_IMPLEMENT_ME()
+  {{
+    // Please implement whatever is found inside plugin of type '{self.plgType}';
+  }}
+}}
+        """[9:]
+        return pluginPhpFileContents
+
+    if ( self.args.plugin_type_custom is not None ):
+      pluginPhpFileContents = f"""
+      <?php
+defined('_JEXEC') or die;
+
+use Joomla\CMS\Plugin\CMSPlugin;
+class {plgClassName} extends CMSPlugin
+{{
+	protected $autoloadLanguage = true;
+  public function PLEASE_IMPLEMENT_ME()
+  {{
+    // Please implement whatever is found inside plugin of type '{self.plgType}';
+  }}
+}}
+        """[7:]
+      return pluginPhpFileContents
+
+  def setupPluginPhpFile(self):
+    # Create the plugin php file container
+    pluginPhpFile = f"{self.plgPackageBaseFolder}/{self.plgNameJoomla}.php"
+    self.createFile( assetType = "f", targetPath = pluginPhpFile, fileContents = self.preparePluginPhpFileContents() )
+
+
   def setupPluginManifestFile(self):
     # Create the plugin manifest xml file container
     pluginManifestFile = f"{self.plgPackageBaseFolder}/{self.plgNameJoomla}.xml"
@@ -442,6 +521,7 @@ Usage Example in Bash/sh/zsh:
     self.setupLanguageLangLocalCodeSysIniFile()
     self.handleSqlSupport()
     self.handleOptionalFolders()
+    self.setupPluginPhpFile()
     self.setupPluginManifestFile()
     self.finishAndCreateInstallable()
 
