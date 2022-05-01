@@ -196,9 +196,12 @@ Usage Example in Bash/sh/zsh:
     self.optFolderNameManifestPartial = ""
     if ( self.args.add_folders is not None and type(self.args.add_folders) is str ):
       self.optFolderList = self.args.add_folders
+      indexHtmlFile = 'index.html'
+      indexHtmlFileContents = "<!DOCTYPE html><title></title>"
       if ( ',' in self.optFolderList ):
         for idx, folder in enumerate(self.optFolderList.split(',')):
           self.createFile(assetType = "d", targetPath = f"{self.plgPackageBaseFolder}/{folder}")
+          self.createFile(assetType = "f", targetPath = f"{self.plgPackageBaseFolder}/{folder}/{indexHtmlFile}", fileContents = indexHtmlFileContents)
           # If this is the first time through the loop template the folder element string without pre-padding
           if ( idx == 0):
             self.optFolderNameManifestPartial += f"""<folder>{folder}</folder>\n"""
@@ -210,6 +213,7 @@ Usage Example in Bash/sh/zsh:
         folder = self.optFolderList
         self.optFolderNameManifestPartial = f"""<folder>{folder}</folder>"""
         self.createFile(assetType = "d", targetPath = f"{self.plgPackageBaseFolder}/{folder}")
+        self.createFile(assetType = "f", targetPath = f"{self.plgPackageBaseFolder}/{folder}/{indexHtmlFile}", fileContents = indexHtmlFileContents)
 
   # Folder asset, file asset, and writer function helper
   def createFile(self, assetType = "f", targetPath = None, fileContents = None):
