@@ -375,10 +375,14 @@ class {plgClassName} extends CMSPlugin
           {self.sqlDirNameManifestPartial}
         </files>
 
+        <!-- While this construct works in components, it appears to cause failure messages in plugin installations
+             Language files that exist in properly locale-labelled foldeers will continue to be installed as normal
+             this is due to the language folder listed under files above.
         <languages>
           <language tag="{self.langLocaleCode}">{self.langLocaleCode}.{self.plgManifestNameField}.ini</language>
           <language tag="{self.langLocaleCode}">{self.langLocaleCode}.{self.plgManifestNameField}.sys.ini</language>
         </languages>
+        -->
 
         {self.sqlHooksInManifestPartial}
 
