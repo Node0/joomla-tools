@@ -72,7 +72,7 @@ Usage Example in Bash/sh/zsh:
     # positional arg declaration parser.add_argument('foo', metavar='N', type=int, nargs='+', help='an integer for the accumulator')
     self.args = parser.parse_args()
 
-    self.JCorePluginTypes = [ "actionlog", "authentication", "captcha", "editors", "extension", "filesystem", "media-action", "quickicon", "system", "twofactorauth", "webservices", "api-authentication", "behaviour", "content", "editors-xtd", "fields", "finder", "installer", "privacy", "sampledata", "task", "user", "workflow" ]
+    self.JCorePluginTypes = [ "actionlog", "authentication", "captcha", "editors", "extension", "filesystem", "media-action", "quickicon", "system", "twofactorauth", "webservices", "api-authentication", "behaviour", "content", "editors-xtd", "fields", "finder", "installer", "privacy", "sampledata", "task", "user", "workflow" ] # type: list[str]
 
 
     # Basic plugin creation directory location and permissions
@@ -116,30 +116,6 @@ Usage Example in Bash/sh/zsh:
     # within the current directory (where the executing python file resides)
     self.plgFolderName = f"{self.plgNameJoomla}"
     self.plgPackageBaseFolder = f"{self.currDir}/{self.plgFolderName}"
-
-
-    # if ( self.args.add_tmpl_dir is not None):
-    #   self.tmplDirName = self.args.add_tmpl_dir
-    #   self.tmplDirPath = f"{self.plgPackageBaseFolder}/{self.tmplDirName}"
-    #   self.tmplDirNameManifestPartial = f"<folder>{self.tmplDirName}</folder>"
-    # else:
-    #   self.tmplDirNameManifestPartial = ""
-
-    # if ( self.args.add_src_dir is not None):
-    #   self.srcDirName = self.args.add_src_dir
-    #   self.srcDirPath = f"{self.plgPackageBaseFolder}/{self.srcDirName}"
-    #   self.srcDirNameManifestPartial = f"<folder>{self.srcDirName}</folder>"
-    # else:
-    #   self.srcDirNameManifestPartial = ""
-
-    # if ( self.args.add_lib_dir is not None):
-    #   self.libDirName = self.args.add_lib_dir
-    #   self.libDirPath = f"{self.plgPackageBaseFolder}/{self.libDirName}"
-    #   self.libDirNameManifestPartial = f"<folder>{self.libDirName}</folder>"
-    # else:
-    #   self.libDirNameManifestPartial = ""
-
-    # If the --add-sql-support flag is set (just a bool) then setup the sql support
 
 
     # Initial language locale to setup
