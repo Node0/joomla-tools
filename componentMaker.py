@@ -151,8 +151,8 @@ Usage Example in Bash/sh/zsh:
     self.siteFolder  = f"{self.comPackageBaseFolder}/site"
     self.adminFolder = f"{self.comPackageBaseFolder}/admin"
     self.apiFolder   = f"{self.comPackageBaseFolder}/api/src"
-    self.apiViewFolder = f"{self.apiFolder}/view"
-    self.apiControllerFolder = f"{self.apiFolder}/controller"
+    self.apiViewFolder = f"{self.apiFolder}/View"
+    self.apiControllerFolder = f"{self.apiFolder}/Controller"
 
     self.createFile(assetType = "d", targetPath = self.siteFolder)
     self.createFile(assetType = "d", targetPath = self.adminFolder)
