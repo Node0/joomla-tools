@@ -19,6 +19,7 @@ Usage Example in Bash/sh/zsh:
   --plugin-name="Generic Hello World" \\
   --plugin-desc="A generic hello world (REST API) plugin for J! 4" \\
   --plugin-type="webservices" \\
+  --plugin-webservices-component-name="genericHelloWorld" \\
   --vendor-name="joomlaology" \\
   --author-name="Joe Hacobian" \\
   --author-url="https://algorithme.us" \\
@@ -63,7 +64,7 @@ Usage Example in Bash/sh/zsh:
                         help="""The plugin's version string""")
     parser.add_argument('--plugin-meta',       required=False,  metavar='e.g. --plugin-meta="webservices-granular"',
                         help="""OPTIONAL: A string to enable special code generation or other feature flags, currently accepted values are: webservices-granular""")
-    parser.add_argument('--plugin-webservices-component-name',       required=False,  metavar='e.g. --plugin-webservices-component-name="com_myApiComponent"',
+    parser.add_argument('--plugin-webservices-component-name',       required=False,  metavar='e.g. --plugin-webservices-component-name="com_generichelloworld"',
                         help="""CONDITIONALLY OPTIONAL: The name of the J! 4 component that will be used to handle the plugin's webservices. If --plugin-type is 'webservices', this argument is required.""")
     parser.add_argument('--initial-view-name', required=False,  metavar='e.g. --initial-view-name="CanPluginsEvenHaveViews"',
                         help="""OPTIONAL: Set the name of the initial view. If argument not passed this defaults to Main""")
@@ -105,9 +106,9 @@ Usage Example in Bash/sh/zsh:
         raise Exception(f"""--plugin-type provided was 'webservices' but --plugin-webservices-component-name was not provided.\n
 Please provide a component name for the component responsible for handling the webservices routes.
 The value passed to --plugin-webservices-component-name MUST match the "com_" name of the component\n
-e.g. The folder name of the component under the api folder. An example component such as: [siteroot]/api/components/com_myApiComponent\n
-Would result in the value: "com_myApiComponent" being passed to --plugin-webservices-component-name here is a --plugin-type="webservices" example below:\n
-e.g. --plugin-type="webservices" --plugin-webservices-component-name="com_myApiComponent"\n """)
+e.g. The folder name of the component under the api folder. An example component such as: [siteroot]/api/components/com_generichelloworld\n
+Would result in the value: "com_generichelloworld" being passed to --plugin-webservices-component-name here is a --plugin-type="webservices" example below:\n
+e.g. --plugin-type="webservices" --plugin-webservices-component-name="com_generichelloworld"\n """)
 
 
     # Plugin specific global details
