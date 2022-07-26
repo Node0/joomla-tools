@@ -61,6 +61,10 @@ Usage Example in Bash/sh/zsh:
                         help="""OPTIONAL: Your license type, if argument not passed this defaults to GPL v2""")
     parser.add_argument('--plugin-version',    required=True,   metavar='e.g. --plugin-version="0.0.1"',
                         help="""The plugin's version string""")
+    parser.add_argument('--plugin-meta',       required=False,  metavar='e.g. --plugin-meta="webservices-granular"',
+                        help="""OPTIONAL: A string to enable special code generation or other feature flags, currently accepted values are: webservices-granular""")
+    parser.add_argument('--plugin-webservices-component-name',       required=False,  metavar='e.g. --plugin-webservices-component-name="com_myApiComponent"',
+                        help="""CONDITIONALLY OPTIONAL: The name of the J! 4 component that will be used to handle the plugin's webservices. If --plugin-type is 'webservices', this argument is required.""")
     parser.add_argument('--initial-view-name', required=False,  metavar='e.g. --initial-view-name="CanPluginsEvenHaveViews"',
                         help="""OPTIONAL: Set the name of the initial view. If argument not passed this defaults to Main""")
     parser.add_argument('--add-folders',       required=False,  metavar='e.g. --add-folders="tmpl"',
@@ -86,6 +90,26 @@ Usage Example in Bash/sh/zsh:
         self.plgType = self.args.plugin_type
     else:
       self.plgType = self.args.plugin_type_custom
+
+    # Add plugin meta flag if set
+    if ( self.args.plugin_meta is not None ):
+      self.plgMeta = self.args.plugin_meta
+    else:
+      self.plgMeta = None
+
+    # Add plugin webservices component name if --plugin-type is set to 'webservices'
+    if ( self.plgType == "webservices" ):
+      if ( self.args.plugin_webservices_component_name is not None ):
+        self.plgWebservicesComponentName = self.args.plugin_webservices_component_name
+      else:
+        raise Exception(f"""--plugin-type provided was 'webservices' but --plugin-webservices-component-name was not provided.
+Please provide a component name for the component responsible for handling the webservices routes.
+The value passed to --plugin-webservices-component-name MUST match the "com_" name of the component
+e.g. The folder name of the component under the api folder. An example component such as: [siteroot]/api/components/com_myApiComponent
+Would result in the value passed to --plugin-webservices-component-name being "com_myApiComponent"
+here is a --plugin-type="webservices" example below: 
+e.g. --plugin-type="webservices" --plugin-webservices-component-name="com_myApiComponent" """)
+
 
     # Plugin specific global details
     self.plgName = self.args.plugin_name
@@ -254,8 +278,8 @@ Usage Example in Bash/sh/zsh:
     # Handle templates for core types.
     if ( self.args.plugin_type is not None ):
       print(self.plgType)
-      # Start IF/ELIF cascade to handle template string for each core type.
-      if ( self.plgType == "webservices" ):
+      # Start IF/ELIF cascade to handle template string for each core type and meta variant if applicable.
+      if ( self.plgType == "webservices" and self.plgMeta is None ):
         pluginPhpFileContents = f"""
         <?php
 defined('_JEXEC') or die;
@@ -282,6 +306,46 @@ class {plgClassName} extends CMSPlugin
 	}}
 }}
         """[9:]
+      elif ( self.plgType == "webservices" and self.plgMeta == "webservices-granular" ):
+        pluginPhpFileContents = f"""
+        <?php
+defined('_JEXEC') or die;
+use Joomla\CMS\Plugin\CMSPlugin;
+use Joomla\Router\Route;
+use Joomla\CMS\Log\Log;
+
+class PlgWebservicesAirport extends CMSPlugin
+{{
+  protected $autoloadLanguage = true;
+
+  public function onBeforeApiRoute(&$router)
+  {{
+    // A nice granular way to do it.
+    // new Route(['HTTP_METHOD'],  'arbitrary/pattern/string',                     '<CONTROLLER_NAME>.<PUBLIC_METHOD_NAME>',               [], $defaults)
+    // Obviously substitute the COMPONENTNAME (lowercase no spaces), <CONTROLLER_NAME> as lowercase, & PUBLIC_METHOD_NAME as camelcase.
+    // controllers are to be placed in [site_root]/api/components/com_<component_name>/src/Controllers/<CONTROLLER_NAME>Controller.php
+
+    // So the 'hangars' controller below would in fact be located at:  [site_root]/api/components/com_airport/src/Controllers/HangarsController.php
+    // inside of it would be a public method called getHangarsByAirline() etc
+
+    // An obvious example for ease of comprehension
+    $defaults    = array_merge(['public' => false], ['component' => 'com_<component_name>']);
+    $routes = [
+      /* My cool routes */
+      new Route(['GET'],   'v1/airport/hangars/by/airline/:airLineName',     'hangars.getHangarsByAirline',                ['airLineName'    => '(filter.+validation.+regex)'], $defaults),
+      /* No filtration regex allows ALL patterns to pass through into Jinput on the controller side. */
+      new Route(['GET'],  'v1/airport/hangar/by/id/:id',                          'hangars.getHangarById',                 ['id' => '(\d{{1,9}})'], $defaults),
+      /* No filtration regex allows ALL patterns to pass through into Jinput on the controller side. */
+      new Route(['GET'],  'v1/airport/lounges/by/airline/:airLineName',    'lounges.getLoungesByAirline',           [], $defaults),
+      /* No url parameter, no checking necessary, so you need to grab the POST body via $req = json_decode( $this->input->json->getRaw() ); on the controller side) */
+      new Route(['POST'],  'v1/airport/purchase/ticket',                     'tickets.purchaseTicket',               [], $defaults)
+    ];
+    // Finally, register all specified routes with Joomla's webservices router.
+    $router->addRoutes($routes);
+  }}
+}}
+        """[9:]
+
         return pluginPhpFileContents
 
       elif ( self.plgType == "user" ):
