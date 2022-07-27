@@ -19,6 +19,8 @@ Usage Example in Bash/sh/zsh:
   --plugin-name="Generic Hello World" \\
   --plugin-desc="A generic hello world (REST API) plugin for J! 4" \\
   --plugin-type="webservices" \\
+  --plugin-webservices-component-name="genericHelloWorld" \\
+  --plugin-meta="webservices-granular" \\
   --vendor-name="joomlaology" \\
   --author-name="Joe Hacobian" \\
   --author-url="https://algorithme.us" \\
@@ -61,6 +63,10 @@ Usage Example in Bash/sh/zsh:
                         help="""OPTIONAL: Your license type, if argument not passed this defaults to GPL v2""")
     parser.add_argument('--plugin-version',    required=True,   metavar='e.g. --plugin-version="0.0.1"',
                         help="""The plugin's version string""")
+    parser.add_argument('--plugin-meta',       required=False,  metavar='e.g. --plugin-meta="webservices-granular"',
+                        help="""OPTIONAL: A string to enable special code generation or other feature flags, currently accepted values are: webservices-granular""")
+    parser.add_argument('--plugin-webservices-component-name',       required=False,  metavar='e.g. --plugin-webservices-component-name="com_generichelloworld"',
+                        help="""CONDITIONALLY OPTIONAL: The name of the J! 4 component that will be used to handle the plugin's webservices. If --plugin-type is 'webservices', this argument is required.""")
     parser.add_argument('--initial-view-name', required=False,  metavar='e.g. --initial-view-name="CanPluginsEvenHaveViews"',
                         help="""OPTIONAL: Set the name of the initial view. If argument not passed this defaults to Main""")
     parser.add_argument('--add-folders',       required=False,  metavar='e.g. --add-folders="tmpl"',
@@ -72,7 +78,7 @@ Usage Example in Bash/sh/zsh:
     # positional arg declaration parser.add_argument('foo', metavar='N', type=int, nargs='+', help='an integer for the accumulator')
     self.args = parser.parse_args()
 
-    self.JCorePluginTypes = [ "actionlog", "authentication", "captcha", "editors", "extension", "filesystem", "media-action", "quickicon", "system", "twofactorauth", "webservices", "api-authentication", "behaviour", "content", "editors-xtd", "fields", "finder", "installer", "privacy", "sampledata", "task", "user", "workflow" ]
+    self.JCorePluginTypes = [ "actionlog", "authentication", "captcha", "editors", "extension", "filesystem", "media-action", "quickicon", "system", "twofactorauth", "webservices", "api-authentication", "behaviour", "content", "editors-xtd", "fields", "finder", "installer", "privacy", "sampledata", "task", "user", "workflow" ] # type: list[str]
 
 
     # Basic plugin creation directory location and permissions
@@ -86,6 +92,25 @@ Usage Example in Bash/sh/zsh:
         self.plgType = self.args.plugin_type
     else:
       self.plgType = self.args.plugin_type_custom
+
+    # Add plugin meta flag if set
+    if ( self.args.plugin_meta is not None ):
+      self.plgMeta = self.args.plugin_meta
+    else:
+      self.plgMeta = None
+
+    # Add plugin webservices component name if --plugin-type is set to 'webservices' and raise exception if not set
+    if ( self.plgType == "webservices" ):
+      if ( self.args.plugin_webservices_component_name is not None ):
+        self.plgWebSvcComName = self.args.plugin_webservices_component_name.lower()
+      else:
+        raise Exception(f"""--plugin-type provided was 'webservices' but --plugin-webservices-component-name was not provided.\n
+Please provide a component name for the component responsible for handling the webservices routes.
+The value passed to --plugin-webservices-component-name MUST match the "com_" name of the component\n
+e.g. The folder name of the component under the api folder. An example component such as: [siteroot]/api/components/com_generichelloworld\n
+Would result in the value: "com_generichelloworld" being passed to --plugin-webservices-component-name here is a --plugin-type="webservices" example below:\n
+e.g. --plugin-type="webservices" --plugin-webservices-component-name="com_generichelloworld"\n """)
+
 
     # Plugin specific global details
     self.plgName = self.args.plugin_name
@@ -116,30 +141,6 @@ Usage Example in Bash/sh/zsh:
     # within the current directory (where the executing python file resides)
     self.plgFolderName = f"{self.plgNameJoomla}"
     self.plgPackageBaseFolder = f"{self.currDir}/{self.plgFolderName}"
-
-
-    # if ( self.args.add_tmpl_dir is not None):
-    #   self.tmplDirName = self.args.add_tmpl_dir
-    #   self.tmplDirPath = f"{self.plgPackageBaseFolder}/{self.tmplDirName}"
-    #   self.tmplDirNameManifestPartial = f"<folder>{self.tmplDirName}</folder>"
-    # else:
-    #   self.tmplDirNameManifestPartial = ""
-
-    # if ( self.args.add_src_dir is not None):
-    #   self.srcDirName = self.args.add_src_dir
-    #   self.srcDirPath = f"{self.plgPackageBaseFolder}/{self.srcDirName}"
-    #   self.srcDirNameManifestPartial = f"<folder>{self.srcDirName}</folder>"
-    # else:
-    #   self.srcDirNameManifestPartial = ""
-
-    # if ( self.args.add_lib_dir is not None):
-    #   self.libDirName = self.args.add_lib_dir
-    #   self.libDirPath = f"{self.plgPackageBaseFolder}/{self.libDirName}"
-    #   self.libDirNameManifestPartial = f"<folder>{self.libDirName}</folder>"
-    # else:
-    #   self.libDirNameManifestPartial = ""
-
-    # If the --add-sql-support flag is set (just a bool) then setup the sql support
 
 
     # Initial language locale to setup
@@ -196,9 +197,12 @@ Usage Example in Bash/sh/zsh:
     self.optFolderNameManifestPartial = ""
     if ( self.args.add_folders is not None and type(self.args.add_folders) is str ):
       self.optFolderList = self.args.add_folders
+      indexHtmlFile = 'index.html'
+      indexHtmlFileContents = "<!DOCTYPE html><title></title>"
       if ( ',' in self.optFolderList ):
         for idx, folder in enumerate(self.optFolderList.split(',')):
           self.createFile(assetType = "d", targetPath = f"{self.plgPackageBaseFolder}/{folder}")
+          self.createFile(assetType = "f", targetPath = f"{self.plgPackageBaseFolder}/{folder}/{indexHtmlFile}", fileContents = indexHtmlFileContents)
           # If this is the first time through the loop template the folder element string without pre-padding
           if ( idx == 0):
             self.optFolderNameManifestPartial += f"""<folder>{folder}</folder>\n"""
@@ -210,6 +214,7 @@ Usage Example in Bash/sh/zsh:
         folder = self.optFolderList
         self.optFolderNameManifestPartial = f"""<folder>{folder}</folder>"""
         self.createFile(assetType = "d", targetPath = f"{self.plgPackageBaseFolder}/{folder}")
+        self.createFile(assetType = "f", targetPath = f"{self.plgPackageBaseFolder}/{folder}/{indexHtmlFile}", fileContents = indexHtmlFileContents)
 
   # Folder asset, file asset, and writer function helper
   def createFile(self, assetType = "f", targetPath = None, fileContents = None):
@@ -265,6 +270,136 @@ Usage Example in Bash/sh/zsh:
     # Create the base plugin folder
     self.createFile(assetType = "d", targetPath = self.plgPackageBaseFolder)
 
+  # This method handles preparation of the MANY types of plugin php files' contents
+  # For now we'll stick to handling the webservices type, but build handling logic to
+  # dynamically substitute plugin file contents when other types are introduced.
+  def preparePluginPhpFileContents(self):
+    pluginPhpFileContents = ""
+    plgClassName = f"Plg{self.plgType.capitalize()}{self.plgNameJoomla.capitalize()}"
+    # Handle templates for core types.
+    if ( self.args.plugin_type is not None ):
+      print(self.plgType)
+
+      # Start IF/ELIF cascade to handle template string for each core type and meta variant if applicable.
+      # Note: This method MUST `return pluginPhpFileContents` after each if/elif in order to function properly
+      if ( self.plgType == "webservices" and self.plgMeta != "webservices-granular" ):
+        pluginPhpFileContents = rf"""
+        <?php
+defined('_JEXEC') or die;
+
+use Joomla\CMS\Plugin\CMSPlugin;
+use Joomla\CMS\Router\ApiRouter;
+
+class {plgClassName} extends CMSPlugin
+{{
+	protected $autoloadLanguage = true;
+	public function onBeforeApiRoute(&$router)
+	{{
+		$router->createCRUDRoutes(
+			'v1/<endpointString>', /* An arbitrary route endpoint string */
+			'<ControllerName>', /* The controller file's <CONTROLLER_NAME> segment in <SITEROOT>/api/components/{self.plgWebSvcComName}/src/controller/<CONTROLLER_NAME>Controller.php */
+			['component' => '{self.plgWebSvcComName}']
+		);
+		$router->createCRUDRoutes(
+			'v1/<endpointString>/categories',
+			'categories',
+			['component' => 'com_categories', 'extension' => '{self.plgWebSvcComName}']
+		);
+	}}
+}}
+        """[9:]
+        return pluginPhpFileContents
+
+      elif ( self.plgType == "webservices" and self.plgMeta == "webservices-granular" ):
+        print("Executing case 2 (granular Joomla webservices)")
+        pluginPhpFileContents = rf"""
+        <?php
+defined('_JEXEC') or die;
+use Joomla\CMS\Plugin\CMSPlugin;
+use Joomla\Router\Route;
+use Joomla\CMS\Log\Log;
+
+class {plgClassName} extends CMSPlugin
+{{
+  protected $autoloadLanguage = true;
+
+  public function onBeforeApiRoute(&$router)
+  {{
+    // A nice granular way to do it.
+    // new Route(['HTTP_METHOD'],  'arbitrary/pattern/string',                     '<CONTROLLER_NAME>.<PUBLIC_METHOD_NAME>',               [], $defaults)
+    // Obviously substitute the COMPONENTNAME (lowercase no spaces), <CONTROLLER_NAME> as lowercase, & PUBLIC_METHOD_NAME as camelcase.
+    // controllers are to be placed in [site_root]/api/components/{self.plgWebSvcComName}/src/Controllers/<CONTROLLER_NAME>Controller.php
+
+    // An 'Airport' component is assumed for the purposes of illustration, please modify this file to match your actual controller class names.
+    // So the 'hangars' controller below would in fact be located at:  [site_root]/api/components/{self.plgWebSvcComName}/src/Controllers/HangarsController.php
+    // inside of it would be a public method called getHangarsByAirline() etc
+
+    // An obvious example for ease of comprehension
+    $defaults    = array_merge(['public' => false], ['component' => '{self.plgWebSvcComName}']);
+    $routes = [
+      /* My Useful GET routes */
+      new Route(['GET'],   'v1/airport/hangars/by/airline/:airLineName',     'hangars.getHangarsByAirline',                ['airLineName'    => '(filter.+validation.+regex)'], $defaults),
+      /* No filtration regex allows ALL patterns to pass through into Jinput on the controller side. */
+      new Route(['GET'],  'v1/airport/hangar/by/id/:id',                          'hangars.getHangarById',                 ['id' => '(\d{{1,9}})'], $defaults),
+      /* No filtration regex allows ALL patterns to pass through into Jinput on the controller side. */
+      new Route(['GET'],  'v1/airport/lounges/by/airline/:airLineName',    'lounges.getLoungesByAirline',           [], $defaults),
+      /* My Useful POST routes */
+      /*
+      * If no url parameter is specified then no checking is necessary!
+      * Note: same rules apply as for GET routes above if you DID want to have parameters).
+      *
+      * In the POST example below you need to grab the POST body via: $req = json_decode( $this->input->json->getRaw() ); on the controller side
+      * If you want an associative array use: $req = json_decode( $this->input->json->getRaw(), true ); on the controller side
+      */
+      new Route(['POST'],  'v1/airport/purchase/ticket',                     'tickets.purchaseTicket',               [], $defaults)
+    ];
+    // Finally, register all specified routes with Joomla's webservices router.
+    $router->addRoutes($routes);
+  }}
+}}
+        """[9:]
+        return pluginPhpFileContents
+
+      elif ( self.plgType == "user" ):
+        pluginPhpFileContents = f"""
+        <?php
+defined('_JEXEC') or die;
+
+use Joomla\CMS\Plugin\CMSPlugin;
+class {plgClassName} extends CMSPlugin
+{{
+	protected $autoloadLanguage = true;
+  public function PLEASE_IMPLEMENT_ME()
+  {{
+    // Please implement whatever is found inside plugin of type '{self.plgType}';
+  }}
+}}
+        """[9:]
+        return pluginPhpFileContents
+
+    if ( self.args.plugin_type_custom is not None ):
+      pluginPhpFileContents = f"""
+      <?php
+defined('_JEXEC') or die;
+
+use Joomla\CMS\Plugin\CMSPlugin;
+class {plgClassName} extends CMSPlugin
+{{
+	protected $autoloadLanguage = true;
+  public function PLEASE_IMPLEMENT_ME()
+  {{
+    // Please implement whatever is found inside plugin of type '{self.plgType}';
+  }}
+}}
+        """[7:]
+      return pluginPhpFileContents
+
+  def setupPluginPhpFile(self):
+    # Create the plugin php file container
+    pluginPhpFile = f"{self.plgPackageBaseFolder}/{self.plgNameJoomla}.php"
+    self.createFile( assetType = "f", targetPath = pluginPhpFile, fileContents = self.preparePluginPhpFileContents() )
+
+
   def setupPluginManifestFile(self):
     # Create the plugin manifest xml file container
     pluginManifestFile = f"{self.plgPackageBaseFolder}/{self.plgNameJoomla}.xml"
@@ -292,10 +427,14 @@ Usage Example in Bash/sh/zsh:
           {self.sqlDirNameManifestPartial}
         </files>
 
+        <!-- While this construct works in components, it appears to cause failure messages in plugin installations
+             Language files that exist in properly locale-labelled foldeers will continue to be installed as normal
+             this is due to the language folder listed under files above.
         <languages>
           <language tag="{self.langLocaleCode}">{self.langLocaleCode}.{self.plgManifestNameField}.ini</language>
           <language tag="{self.langLocaleCode}">{self.langLocaleCode}.{self.plgManifestNameField}.sys.ini</language>
         </languages>
+        -->
 
         {self.sqlHooksInManifestPartial}
 
@@ -442,6 +581,7 @@ Usage Example in Bash/sh/zsh:
     self.setupLanguageLangLocalCodeSysIniFile()
     self.handleSqlSupport()
     self.handleOptionalFolders()
+    self.setupPluginPhpFile()
     self.setupPluginManifestFile()
     self.finishAndCreateInstallable()
 
