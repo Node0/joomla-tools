@@ -2,7 +2,7 @@
 
 ### All tooling is currently oriented towards Joomla 4
 
-Joomla tooling scripts to scaffold components, Modules, and Plugins.
+Joomla tooling scripts to scaffold Components, Plugins, (and maybe one day modules).
 
 PLEASE NOTE: You will need Python 3.6 or later and the `os`, `sh`, and `argparse` libraries installed. Of these only `sh` requires manual installation which can be accomplished as follows: `pip3 install sh`
 
