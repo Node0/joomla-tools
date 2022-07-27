@@ -25,7 +25,12 @@ Usage Example in Bash/sh/zsh:
   --creation-month="April" \\
   --creation-year="2022" \\
   --component-version="0.0.1" \\
-  --api-controller-names="users,sports,weather,airlinetickets"
+  --api-controller-names="users,sports,weather,airlinetickets" \\
+  --api-controller-design="joomla-bloat"
+
+  Note: If you'de like to see comprehensive database and input manipulation examples,
+  Set the api-controller-design value to "unjoomla-fast" i.e. --api-controller-design="unjoomla-fast"
+  Enjoy the unfettered REST potention of Joomla 4!
 
   From there, test your component scaffold by installing the zip file into Joomla.
   You may then copy the generated folder into your git repo and begin development.""")
@@ -42,6 +47,7 @@ Usage Example in Bash/sh/zsh:
     parser.add_argument('--component-version',required=True, help="""The component's version string""")
     parser.add_argument('--initial-view-name',required=False, help="""OPTIONAL: Set the name of the initial view. Defaults to Main""")
     parser.add_argument('--api-controller-names',required=False, help="""OPTIONAL: Creates a set of API controllers and JSON API views taken in comma separated form from the user. If None given, Defaults to creating a Main controller.""")
+    parser.add_argument('--api-controller-design',required=False, help="""OPTIONAL: Selects the controller design philosophy. Defaults to J! 4's default i.e. joomla-bloat (MVC code-bloat for REST methods...). You have the option to choose: unjoomla-fast if you'd like to work in an express-style with all work happenning in the controller methods.""")
     # The following commented out declarations are for illustration purposes.
     # parser.add_argument('-a', '--author-name',      required=True, help="""The code author's name""")
     # positional arg declaration parser.add_argument('foo', metavar='N', type=int, nargs='+', help='an integer for the accumulator')
@@ -71,6 +77,11 @@ Usage Example in Bash/sh/zsh:
     # If a custom license type is specified, use it, else GPL v2
     self.comLicenseType = self.args.license_type if self.args.license_type != None else "GPL v2"
 
+    # Detect and specify the api-controller-design
+    if (self.args.api_controller_design is not None):
+      self.apiControllerDesign = "unjoomla-fast" if self.args.api_controller_design == "unjoomla-fast" else "joomla-bloat"
+    else:
+      self.apiControllerDesign = "joomla-bloat"
 
     self.comVersion = self.args.component_version
 
@@ -151,8 +162,8 @@ Usage Example in Bash/sh/zsh:
     self.siteFolder  = f"{self.comPackageBaseFolder}/site"
     self.adminFolder = f"{self.comPackageBaseFolder}/admin"
     self.apiFolder   = f"{self.comPackageBaseFolder}/api/src"
-    self.apiViewFolder = f"{self.apiFolder}/view"
-    self.apiControllerFolder = f"{self.apiFolder}/controller"
+    self.apiViewFolder = f"{self.apiFolder}/View"
+    self.apiControllerFolder = f"{self.apiFolder}/Controller"
 
     self.createFile(assetType = "d", targetPath = self.siteFolder)
     self.createFile(assetType = "d", targetPath = self.adminFolder)
@@ -284,84 +295,340 @@ Usage Example in Bash/sh/zsh:
       self.apiControllerNamesStr = self.args.api_controller_names
       if ( ',' in self.apiControllerNamesStr ):
         for idx, controllerName in enumerate(self.apiControllerNamesStr.split(',')):
-          # First customize a generic api controller php template
-          self.apiControllerPhpFileContents = f"""
-          <?php
-namespace {self.vendorName}\Component\{self.comNameInNamespaces}\Api\Controller;
 
+          if (self.apiControllerDesign == "joomla-bloat"):
+          # Create Joomla-Bloated and cantankerous API controllers complete with view abstractions to get poor-documentedly lost in.
+            self.apiControllerPhpFileContents = rf"""
+            <?php
+  namespace {self.vendorName}\Component\{self.comNameInNamespaces}\Api\Controller;
+
+  defined('_JEXEC') or die;
+
+  use Joomla\CMS\MVC\Controller\ApiController;
+  use Joomla\Component\Fields\Administrator\Helper\FieldsHelper;
+
+  // {{controllerName}} here is merely a placeholder for the shared classnaming system across controllers, view folders (and possibly models)
+  class {controllerName.capitalize()}Controller extends ApiController
+  {{
+    protected $contentType = '{controllerName.lower()}'; /* My understanding is that this maps to the desired model name */
+    protected $default_view = '{controllerName.lower()}'; /* This maps to the folder name containing the JSON API view */
+
+    protected function save($recordKey = null)
+    {{
+      $data = (array) json_decode($this->input->json->getRaw(), true);
+      foreach (FieldsHelper::getFields('{self.comFolderName}.{controllerName.lower()}') as $field) // This probably looks for a model of the same name
+      {{
+        if (isset($data[$field->name]))
+        {{
+          !isset($data['com_fields']) && $data['com_fields'] = [];
+          $data['com_fields'][$field->name] = $data[$field->name];
+          unset($data[$field->name]);
+        }}
+      }}
+      $this->input->set('data', $data);
+      return parent::save($recordKey);
+    }}
+  }}
+            """[13:]
+          elif (self.apiControllerDesign == "unjoomla-fast"):
+            self.apiControllerPhpFileContents = rf"""
+            <?php
+namespace {self.vendorName}\Component\{self.comNameInNamespaces}\Api\Controller;
 defined('_JEXEC') or die;
 
 use Joomla\CMS\MVC\Controller\ApiController;
 use Joomla\Component\Fields\Administrator\Helper\FieldsHelper;
+use Joomla\CMS\Response\JsonResponse;
+use Joomla\CMS\Filter\InputFilter;
+use Joomla\CMS\Factory;
+use Joomla\CMS\User\UserHelper as JUserTools;
+use Joomla\CMS\Log\Log;
 
-// {{controllerName}} here is merely a placeholder for the shared classnaming system across controllers, view folders (and possibly models)
+/* UnJoomla Api Tools (welcome to FASTER J! API development)
+* This trait will probably evolve to become a class (installed by library package) in the future
+* and its methods will be statically called after inclusion by namespace.
+*/
+trait ApiTools {{
+  /**
+   * emitJson
+   *
+   * @author	Joe Hacobian
+   * @since	v0.0.1
+   * @access	public
+   * @param	mixed	$inputArr
+   * @return	void Writes Response & closes connection
+   */
+  public function emitJson($inputArr) {{
+    /* Thanks go out to Nicholas K. Dionysopoulos from Akeeba
+    for coming up with emitting JSON from Joomla this way.
+    */
+    header('Content-type:application/json;charset=utf-8');
+    // If you encounter otherwise intractable CORS issues, you may wish to uncomment the line below.
+    // header('Access-Control-Allow-Origin: *');
+    @ob_end_clean();
+    echo(json_encode($inputArr));
+    flush();
+    $this->app->close();
+    return;
+  }}
+
+  /**
+   * prepErrMsgExmplPldFmt
+   *
+   * @author	Joe Hacobian
+   * @since	v0.0.1
+   * @access	public
+   * @param	string	$pldString
+   * @param string  $pldMode --> encB64AndUri OR onlyEncUri OR literal
+   * @return string Returns payload string wrapped inside encoding functions according to the payload mode given in $pldMode
+   */
+  public function prepErrMsgExPldFmt($pldString, $pldMode)
+  {{
+    if (gettype($pldString) == 'string' && gettype($pldMode) == 'string')
+    {{
+      switch ($pldMode)
+      {{
+        case 'literal':
+          $formattedPayloadEncodingExample = $pldString;
+          break;
+        case 'onlyEncUri':
+          $formattedPayloadEncodingExample = "encodeURIComponent( '$pldString' )";
+          break;
+        case 'encB64AndUri':
+          $formattedPayloadEncodingExample = "encodeURIComponent( btoa( '$pldString' ) )";
+          break;
+        default:
+          $formattedPayloadEncodingExample = $pldString;
+          break;
+      }}
+      return $formattedPayloadEncodingExample;
+    }}
+    if (!isset($formattedPayloadEncodingExample))
+    {{
+      if ($pldString !== null && $pldMode !== null)
+      {{
+        return "Payload & Payload mode NOT supplied.";
+      }}
+    }}
+  }}
+}}
+
+
 class {controllerName.capitalize()}Controller extends ApiController
 {{
-	protected $contentType = '{controllerName.lower()}'; /* My understanding is that this maps to the desired model name */
-	protected $default_view = '{controllerName.lower()}'; /* This maps to the folder name containing the JSON API view */
+  // Pull in our ApiTools trait.
+  use ApiTools;
+	/**
+	 * Our API response associative array
+	 *
+	 * @var    array
+	 * @since  4.0
+	 */
+  // Initialize success to false, set to true just before sending assembled payload.
+  protected $res = [ 'success' => false ];
 
-	protected function save($recordKey = null)
-	{{
-		$data = (array) json_decode($this->input->json->getRaw(), true);
-		foreach (FieldsHelper::getFields('{self.comFolderName}.{controllerName.lower()}') as $field) // This probably looks for a model of the same name
-		{{
-			if (isset($data[$field->name]))
-			{{
-				!isset($data['com_fields']) && $data['com_fields'] = [];
-				$data['com_fields'][$field->name] = $data[$field->name];
-				unset($data[$field->name]);
-			}}
-		}}
-		$this->input->set('data', $data);
-		return parent::save($recordKey);
-	}}
+  // A utility method to get the J! database object
+  protected function getDbo() {{ return Factory::getContainer()->get('db'); }}
+
+
+
+   /**
+   * getFoo()
+   *
+   * @author	Joe Hacobian
+   * @since	0.0.1
+   * @access	public
+   * @param	string	$this->input->get('fooParam', null, raw)
+   * @return	void {{ "success" : true | false, [ "data" : {{ "key" : "value" }} | "message" : "<message>"] }}
+   */
+
+  /* Uncomment all block comments (except for explanations) to use this method.
+  public function getFooWithJoin()
+  {{
+    // Log out all of the input object.
+    //Log::add('UN-JOOMLA debug from file: ' . __FILE__ . 'Contents are: '.print_r($this->input, true), Log::INFO );
+
+    $db = $this->getDbo();
+
+    // Common modes of $this->get()
+
+    /*
+    * DISCLAIMER This was just a parameter get test, obviously one should NEVER send passwords in the url (base64 or not)
+    * For GET reqs use headers which are encrypted in https (update forthcoming so this note will be obsolete)
+    * For POST reqs use either headers or the request body and set a property.
+    * So do not send passwords or any other sensitive data over the URI using this technique.
+    * Otherwise you may multiplex lots of things into a | separated string for ease of sending arrays through a single uri param.
+    */
+
+    /*
+    // Set the default value to the string 'undefined' if value is missing, use base64 validation
+    $this->input->get('userEmailPayload', 'undefined', 'base64')
+
+    // Set the default value to null if value is missing, use string validation.
+    $this->input->get('userEmail', null, 'string')
+
+    // Input existence checks and regex guards (example is for a 'username|password' payload )
+    // 'username|password' OR 'id|password' where username is the user's email address.
+
+
+
+
+    if ( $this->input->get('userEmailPayload') !== null ) {{
+      $validEmailPayloadDetected = preg_match_all('/([a-zA-Z0-9\-\_\.\+]{{1,40}}@.+\|)/', base64_decode( $this->input->get('userEmailPayload')), $matches );
+      //Log::add('UN-JOOMLA debug from file: ' . __FILE__ . 'Email payload detected as: '.base64_decode($this->input->get('userEmailPayload')), Log::INFO);
+    }}
+    if ( $this->input->get('userIdPayload') !== null ) {{
+      $validIdPayloadDetected = preg_match_all('/([0-9]{{1,8}}\|)/', base64_decode( $this->input->get('userIdPayload')), $matches );
+      //Log::add('UN-JOOMLA debug from file: ' . __FILE__ . 'ID payload detected as: '.base64_decode($this->input->get('userIdPayload')), Log::INFO );
+    }}
+
+    if ( $validEmailPayloadDetected )
+    {{
+      // Kinda like object destructuring
+      list( $userName, $password ) = explode( '|', base64_decode( $this->input->get('userEmailPayload', 'undefined', 'base64') ) );
+
+      // 2nd query that costs perf (shown for example only)    $this->req['userId'] = JUserTools::getUserId($userName);
+      // Passowrd verification method:   $passWdVerifyStatus = JUserTools::verifyPassword($password, $this->usrAuthData['joomlatoken.enabled']['usrPass']);
+
+      // One-shot query gets us username, user id, password, and API token fields, this one selects on supplied username
+
+      $query = $db->getQuery(true)
+                  ->select($db->quoteName([ 'U.id', 'U.username', 'U.password' ], [ 'usrId', 'usrName', 'usrPass' ] ))
+                  ->select($db->quoteName([ 'P.user_id', 'P.profile_key', 'P.profile_value'], ['pflUsrId', 'pflKey', 'pflValue'] ))
+                  ->from($db->quoteName( '#__users', 'U' ))
+                  ->join('INNER', $db->quoteName( '#__user_profiles', 'P' ) . ' ON ' . $db->quoteName('U.id') . ' = ' . $db->quoteName('P.user_id'))
+                  ->where( $db->quoteName('U.username') . ' = :userName')
+                  ->setLimit('2')
+                  ->bind(':userName', $userName);
+      $db->setQuery($query);
+      $this->usrAuthData = $db->loadAssocList('pflKey');
+
+
+      $userId = $this->usrAuthData['joomlatoken.enabled']['usrId'];
+
+    }}
+
+    $this->emitJson($this->res);
+    return;
+  }}
+
+
+  /**
+   * basicFetchMethod
+   *
+   * @author	Joe Hacobian
+   * @since	0.0.1
+   * @access	public
+   * @param	string	$this->input->get('userEmail')
+   * @return	void {{ "success" : true | false, ["data" : Array([userId, user, userEmail]) | "message" : "<message>"] }}
+   */
+
+  /*
+  public function basicFetchMethod()
+  {{
+    $db = $this->getDbo();
+    //Log::add('UN-JOOMLA debug from file: ' . __FILE__ . 'Method checkForExtantUser was called, input is: '.$this->input->get('userEmail', null, 'string') );
+
+
+    if ( $this->input->get('userEmail', null, 'string') !== null ) {{
+      $validUserEmailDetected = preg_match_all('/([a-zA-Z0-9\-\_\.\+]{{1,40}}@.+)/', $this->input->get('userEmail', null, 'string'), $matches );
+    }} else {{
+      $this->res['success'] = false;
+      $this->res['message'] = "The given user email: ".$this->input->get('userEmail', null, 'string')." is empty, please supply a valid email address.";
+      $this->emitJson($this->res);
+      return;
+    }}
+
+    if( $validUserEmailDetected ) {{
+      // Log::add('UN-JOOMLA debug from file: ' . __FILE__ . 'Contents are: '.print_r($this->input->get('userEmail', null, 'string'), true) );
+      $userEmail = $this->input->get('userEmail', null, 'string');
+      // Attempt to get user id, username, and email
+      $query = $db->getQuery(true)
+        ->select($db->quoteName([ 'U.id', 'U.username', 'U.email' ], [ 'usrId', 'usrName', 'usrEmail' ] ))
+        ->from($db->quoteName( '#__users', 'U' ))
+        ->where( $db->quoteName('U.email') . ' = :userEmail')
+        ->setLimit('1')
+        ->bind(':userEmail', $userEmail);
+      $db->setQuery($query);
+
+      // Key the result list hashmap to the field passed to loadAssocList()
+      $this->usrExistenceCheckResultData = $db->loadAssocList('usrEmail');
+      //Log::add('UN-JOOMLA debug from file: ' . __FILE__ . 'User Email is: '.$userEmail );
+
+      $userId = $this->usrExistenceCheckResultData["$userEmail"]['usrId'];
+      $userName = $this->usrExistenceCheckResultData["$userEmail"]['usrName'];
+      $userEmail = $this->usrExistenceCheckResultData["$userEmail"]['usrEmail'];
+
+      if ( $userEmail !== null ) {{
+        $this->res['success'] = true;
+        $this->res['data']['userId'] = $userId;
+        $this->res['data']['userName'] = $userName;
+        $this->res['data']['userEmail'] = $userEmail;
+        $this->emitJson($this->res);
+        return;
+      }} else {{
+
+        $this->res['success'] = false;
+        $this->res['message'] = "The requested user email: ".$this->input->get('userEmail', null, 'string')." does not exist.";
+        $this->emitJson($this->res);
+        return;
+      }}
+    }} else {{
+      $this->res['success'] = false;
+      $this->res['message'] = "The requested user email: ".$this->input->get('userEmail', null, 'string')." is an invalid email.";
+      $this->emitJson($this->res);
+      return;
+    }}
+  }}
+  */
+
 }}
-          """[11:]
+            """[13:]
           # then create the controller file and write contents to it in the controller folder
           self.createFile(assetType = "f", targetPath = f"{self.apiControllerFolder}/{controllerName.capitalize()}Controller.php", fileContents = self.apiControllerPhpFileContents )
           # Now go make the folders under the view directory matching these controller names
           self.createFile( assetType = "d", targetPath = f"{self.apiViewFolder}/{controllerName}" )
           self.apiViewPhpFileContents = f"""
           <?php
-namespace {self.vendorName}\Component\{self.comNameInNamespaces}\Api\View\{controllerName.capitalize()};
+  namespace {self.vendorName}\Component\{self.comNameInNamespaces}\Api\View\{controllerName.capitalize()};
 
-defined('_JEXEC') or die;
+  defined('_JEXEC') or die;
 
-use Joomla\CMS\MVC\View\JsonApiView as BaseApiView;
-use Joomla\Component\Fields\Administrator\Helper\FieldsHelper;
+  use Joomla\CMS\MVC\View\JsonApiView as BaseApiView;
+  use Joomla\Component\Fields\Administrator\Helper\FieldsHelper;
 
-class JsonapiView extends BaseApiView
-{{
-	protected $fieldsToRenderItem = ['id', 'alias', 'name', 'catid'];
-	protected $fieldsToRenderList = ['id', 'alias', 'name', 'catid'];
+  class JsonapiView extends BaseApiView
+  {{
+    protected $fieldsToRenderItem = ['id', 'alias', 'name', 'catid'];
+    protected $fieldsToRenderList = ['id', 'alias', 'name', 'catid'];
 
-	public function displayList(array $items = null)
-	{{
-		foreach (FieldsHelper::getFields('{self.comFolderName}.{controllerName.lower()}') as $field)
-		{{
-			$this->fieldsToRenderList[] = $field->id;
-		}}
-		return parent::displayList();
-	}}
+    public function displayList(array $items = null)
+    {{
+      foreach (FieldsHelper::getFields('{self.comFolderName}.{controllerName.lower()}') as $field)
+      {{
+        $this->fieldsToRenderList[] = $field->id;
+      }}
+      return parent::displayList();
+    }}
 
-	public function displayItem($item = null)
-	{{
-		foreach (FieldsHelper::getFields('{self.comFolderName}.{controllerName.lower()}') as $field)
-		{{
-			$this->fieldsToRenderItem[] = $field->name;
-		}}
-		return parent::displayItem();
-	}}
+    public function displayItem($item = null)
+    {{
+      foreach (FieldsHelper::getFields('{self.comFolderName}.{controllerName.lower()}') as $field)
+      {{
+        $this->fieldsToRenderItem[] = $field->name;
+      }}
+      return parent::displayItem();
+    }}
 
-	protected function prepareItem($item)
-	{{
-		foreach (FieldsHelper::getFields('{self.comFolderName}.{controllerName.lower()}', $item, true) as $field)
-		{{
-			$item->{{$field->name}} = isset($field->apivalue) ? $field->apivalue : $field->rawvalue;
-		}}
-		return parent::prepareItem($item);
-	}}
-}}
+    protected function prepareItem($item)
+    {{
+      foreach (FieldsHelper::getFields('{self.comFolderName}.{controllerName.lower()}', $item, true) as $field)
+      {{
+        $item->{{$field->name}} = isset($field->apivalue) ? $field->apivalue : $field->rawvalue;
+      }}
+      return parent::prepareItem($item);
+    }}
+  }}
           """[11:]
           # then create the view file and write contents to it in the view folder
           self.createFile(assetType = "f", targetPath = f"{self.apiViewFolder}/{controllerName.capitalize()}/JsonapiView.php", fileContents = self.apiViewPhpFileContents )
