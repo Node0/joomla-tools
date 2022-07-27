@@ -33,8 +33,13 @@ PLEASE NOTE: You will need Python 3.6 or later and the `os`, `sh`, and `argparse
   --creation-month="April" \
   --creation-year="2022" \
   --component-version="0.0.1" \
-  --api-controller-names="users,sports,weather,airlinetickets"
+  --api-controller-names="users,sports,weather,airlinetickets" \
+  --api-controller-design="joomla-bloat"
 ```
+<br>
+Note: If you'de like to see comprehensive database and input manipulation examples,
+Set the api-controller-design value to "unjoomla-fast" i.e. --api-controller-design="unjoomla-fast"
+Enjoy the unfettered REST potention of Joomla 4!
 
 ### Plugin maker usage:
 
@@ -43,6 +48,8 @@ PLEASE NOTE: You will need Python 3.6 or later and the `os`, `sh`, and `argparse
   --plugin-name="Generic Hello World" \
   --plugin-desc="A generic hello world (REST API) plugin for J! 4" \
   --plugin-type="webservices" \
+  --plugin-webservices-component-name="com_generichelloworld" \
+  --plugin-meta="webservices-granular" \
   --vendor-name="joomlaology" \
   --author-name="Joe Hacobian" \
   --author-url="https://algorithme.us" \
