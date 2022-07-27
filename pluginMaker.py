@@ -20,6 +20,7 @@ Usage Example in Bash/sh/zsh:
   --plugin-desc="A generic hello world (REST API) plugin for J! 4" \\
   --plugin-type="webservices" \\
   --plugin-webservices-component-name="genericHelloWorld" \\
+  --plugin-meta="webservices-granular" \\
   --vendor-name="joomlaology" \\
   --author-name="Joe Hacobian" \\
   --author-url="https://algorithme.us" \\
@@ -101,7 +102,7 @@ Usage Example in Bash/sh/zsh:
     # Add plugin webservices component name if --plugin-type is set to 'webservices' and raise exception if not set
     if ( self.plgType == "webservices" ):
       if ( self.args.plugin_webservices_component_name is not None ):
-        self.plgWebSvcComName = self.args.plugin_webservices_component_name
+        self.plgWebSvcComName = self.args.plugin_webservices_component_name.lower()
       else:
         raise Exception(f"""--plugin-type provided was 'webservices' but --plugin-webservices-component-name was not provided.\n
 Please provide a component name for the component responsible for handling the webservices routes.
@@ -278,9 +279,11 @@ e.g. --plugin-type="webservices" --plugin-webservices-component-name="com_generi
     # Handle templates for core types.
     if ( self.args.plugin_type is not None ):
       print(self.plgType)
+
       # Start IF/ELIF cascade to handle template string for each core type and meta variant if applicable.
-      if ( self.plgType == "webservices" and self.plgMeta is None ):
-        pluginPhpFileContents = f"""
+      # Note: This method MUST `return pluginPhpFileContents` after each if/elif in order to function properly
+      if ( self.plgType == "webservices" and self.plgMeta != "webservices-granular" ):
+        pluginPhpFileContents = rf"""
         <?php
 defined('_JEXEC') or die;
 
@@ -294,8 +297,7 @@ class {plgClassName} extends CMSPlugin
 	{{
 		$router->createCRUDRoutes(
 			'v1/<endpointString>', /* An arbitrary route endpoint string */
-			'<ControllerName>', /* The controller file's <Name> segment in <SITEROOT>/api/components/{self.plgWebSvcComName}/src/controller/<Name>Controller.php
-      OMIT the "Controller" part from the php file name when substituting in <ControllerName> */
+			'<ControllerName>', /* The controller file's <CONTROLLER_NAME> segment in <SITEROOT>/api/components/{self.plgWebSvcComName}/src/controller/<CONTROLLER_NAME>Controller.php */
 			['component' => '{self.plgWebSvcComName}']
 		);
 		$router->createCRUDRoutes(
@@ -306,8 +308,11 @@ class {plgClassName} extends CMSPlugin
 	}}
 }}
         """[9:]
+        return pluginPhpFileContents
+
       elif ( self.plgType == "webservices" and self.plgMeta == "webservices-granular" ):
-        pluginPhpFileContents = f"""
+        print("Executing case 2 (granular Joomla webservices)")
+        pluginPhpFileContents = rf"""
         <?php
 defined('_JEXEC') or die;
 use Joomla\CMS\Plugin\CMSPlugin;
@@ -339,7 +344,13 @@ class {plgClassName} extends CMSPlugin
       /* No filtration regex allows ALL patterns to pass through into Jinput on the controller side. */
       new Route(['GET'],  'v1/airport/lounges/by/airline/:airLineName',    'lounges.getLoungesByAirline',           [], $defaults),
       /* My Useful POST routes */
-      /* No url parameter, no checking necessary, so you need to grab the POST body via $req = json_decode( $this->input->json->getRaw() ); on the controller side) */
+      /*
+      * If no url parameter is specified then no checking is necessary!
+      * Note: same rules apply as for GET routes above if you DID want to have parameters).
+      *
+      * In the POST example below you need to grab the POST body via: $req = json_decode( $this->input->json->getRaw() ); on the controller side
+      * If you want an associative array use: $req = json_decode( $this->input->json->getRaw(), true ); on the controller side
+      */
       new Route(['POST'],  'v1/airport/purchase/ticket',                     'tickets.purchaseTicket',               [], $defaults)
     ];
     // Finally, register all specified routes with Joomla's webservices router.
