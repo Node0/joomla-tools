@@ -6,11 +6,16 @@ Joomla tooling scripts to scaffold Components, Plugins, (and maybe one day modul
 
 PLEASE NOTE: You will need Python 3.6 or later and the `os`, `sh`, and `argparse` libraries installed. Of these only `sh` requires manual installation which can be accomplished as follows: `pip3 install sh`
 
+PLEASE NOTE 2: In order to derive the maximum benefit from the output of tools in this repo, have a look at my [joomla-builder](https://github.com/Node0/joomla-builder) repo `https://github.com/Node0/joomla-builder`.  
+After you utilize the tools in this repo to generate working initial scaffolds, you may move the generated extension folders to a prepared repository (instructions on how to do this are given in the [joomla-builder](https://github.com/Node0/joomla-builder) repo) from where you will be able to easily make changes/additions to your specific project and run the included `./jBuilder.py` script in order to generate installable artifacts.  
+**Happy J! 4 developing!**  
+<br>
+
 #### General goals:
 
-- To have a command line configurable J! 4 component skeleton maker (ready)
-- To have a command line configurable J! 4 plugin skeleton maker (under construction)
-- To have a command line configurable J! 4 module skeleton maker (in backlog)  
+- To have a command line configurable J! 4 component skeleton maker (mostly complete, & feature-dev ongoing)
+- To have a command line configurable J! 4 plugin skeleton maker (webservices-useful, & feature-dev ongoing)
+- To eventually have a command line configurable J! 4 module skeleton maker (in backlog)  
    
 `07-25-2022:` Updated `pluginMaker.py` and `componentMaker.py` to include the un-joomla (more like express style of single method response within controllers) style of handling REST requests, in `componentMaker.py` that consists of the `--api-controller-design="unjoomla-fast"` argument and in `pluginMaker.py` that consists of the `--plugin-meta="webservices-granular"` argument. Additionally, if you pass the webservices plugin type in the plugin type argument i.e. `--plugin-type="webservices"` you are now required to then specify the relevant component name string that will be responsible for handling your REST routes via the --plugin-webservices-component-name argument i.e. `--plugin-webservices-component-name="com_generichelloworld"`.
 After playing around with this and getting some SO feedback, I'll slightly refactor the demo code gen to create a set of extensions that work together and generate an actual working "hello world" response along with some database oriented responses e.g. _getCurrentLoggedInUser_ or some such in order to showcase actual db access logic. That will go a long way towards bootstrapping newcomers into J! 4's webservices REST potential. **So hit that star button or follow me on github to stay updated with new developments.**
